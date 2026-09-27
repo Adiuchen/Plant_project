@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# database scripts and diagrams stay local
+/supabase/
+
 # vercel
 .vercel
 
