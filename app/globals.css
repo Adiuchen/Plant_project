@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-forest: #145c38;
+  --color-ink: #163024;
+  --color-paper: #f4f7f2;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-paper);
+    background-image: radial-gradient(900px 280px at 50% -40px, #dcecdf 0%, transparent 70%);
+    color: var(--color-ink);
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  h1 {
+    letter-spacing: -0.03em;
+  }
+
+  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    border-color: rgb(20 48 32 / 0.16);
+    background: white;
+  }
+
+  input:not([type="hidden"]):focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid rgb(20 92 56 / 0.25);
+    outline-offset: 1px;
+    border-color: var(--color-forest);
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.7rem;
+    background: var(--color-forest);
+    padding: 0.5rem 0.9rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+    transition: background 150ms ease;
+  }
+
+  .btn:hover {
+    background: #0f462b;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+  }
+
+  .surface {
+    border-radius: 1rem;
+    border: 1px solid rgb(20 48 32 / 0.08);
+    background: white;
+    box-shadow: 0 1px 2px rgb(20 48 32 / 0.04);
+  }
+}

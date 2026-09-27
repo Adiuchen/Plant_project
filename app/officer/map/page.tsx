@@ -1,0 +1,36 @@
+import { requireUser } from "@/lib/auth";
+
+export default async function MapPage() {
+  const { supabase } = await requireUser(["conservation_officer"]);
+  const { data, error } = await supabase
+    .from("plant_records")
+    .select("uuid, id, location_name, latitude, longitude, status, species(scientific_name)")
+    .not("latitude", "is", null)
+    .order("recorded_at", { ascending: false });
+
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-8">
+      <h1 className="text-2xl font-semibold">Distribution map</h1>
+      <p className="mt-1 text-sm text-neutral-600">
+        Exact coordinates are visible to conservation officers only. Each link opens the point on OpenStreetMap.
+      </p>
+      {error && <p className="mt-3 text-sm text-red-700">{error.message}</p>}
+      <ul className="mt-4 divide-y surface">
+        {(data ?? []).map((record) => {
+          const species = Array.isArray(record.species) ? record.species[0] : record.species;
+          const mapUrl = `https://www.openstreetmap.org/?mlat=${record.latitude}&mlon=${record.longitude}#map=15/${record.latitude}/${record.longitude}`;
+          return (
+            <li key={record.uuid} className="px-4 py-3 text-sm">
+              <p className="font-medium">{record.id} · {species?.scientific_name || "Unidentified"}</p>
+              <p>
+                {record.location_name || "No place name"} · {record.latitude}, {record.longitude} · {record.status}
+              </p>
+              <a href={mapUrl} target="_blank" rel="noreferrer">Open map</a>
+            </li>
+          );
+        })}
+        {(data ?? []).length === 0 && <li className="px-4 py-6 text-sm text-neutral-500">No GPS records yet.</li>}
+      </ul>
+    </main>
+  );
+}
