@@ -1,4 +1,4 @@
-import { statusLabel } from "@/lib/format";
+import { getCopy, statusText } from "@/lib/i18n";
 
 const tones: Record<string, string> = {
   approved: "bg-emerald-100 text-emerald-900",
@@ -20,10 +20,11 @@ const tones: Record<string, string> = {
   possible_disturbance: "bg-orange-100 text-orange-900",
 };
 
-export function StatusBadge({ status }: { status: string }) {
+export async function StatusBadge({ status }: { status: string }) {
+  const { t } = await getCopy();
   return (
     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${tones[status] ?? "bg-neutral-100 text-neutral-700"}`}>
-      {statusLabel(status)}
+      {statusText(status, t)}
     </span>
   );
 }

@@ -1,11 +1,6 @@
 import { requireUser } from "@/lib/auth";
-import { statusLabel } from "@/lib/format";
+import { getCopy, statusText } from "@/lib/i18n";
 import { createAccount, updateAccount } from "./actions";
-
-const roles = [
-  { value: "botanist", label: "Botanist" },
-  { value: "conservation_officer", label: "Officer" },
-];
 
 export default async function AdminPage({
   searchParams,
@@ -14,6 +9,11 @@ export default async function AdminPage({
 }) {
   const { error, created } = await searchParams;
   const { supabase } = await requireUser(["administrator"]);
+  const { t } = await getCopy();
+  const roles = [
+    { value: "botanist", label: t.botanist },
+    { value: "conservation_officer", label: t.officer },
+  ];
   const { data: profiles, error: profileError } = await supabase
     .from("profiles")
     .select("uuid, id, name, email, role, status")
@@ -26,29 +26,27 @@ export default async function AdminPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">Users</h1>
+      <h1 className="text-2xl font-semibold">{t.users}</h1>
       {(error || profileError) && (
         <p className="mt-3 text-sm text-red-700">{error || profileError?.message}</p>
       )}
       {created && (
         <p className="mt-3 rounded bg-green-50 px-3 py-2 text-sm text-green-900">
-          Account created. Login ID is {created}.
+          {t.accountCreated} {created}.
         </p>
       )}
 
       <form action={createAccount} className="mt-4 grid gap-2 surface p-4 sm:grid-cols-2">
-        <h2 className="sm:col-span-2 font-medium">Create account</h2>
-        <p className="sm:col-span-2 text-sm text-neutral-600">
-          The login ID is assigned automatically. Botanists get B001, B002. Officers get O001, O002.
-        </p>
-        <input className="rounded border px-2 py-1" name="full_name" placeholder="Full name" required />
-        <input className="rounded border px-2 py-1" name="password" type="password" placeholder="Password" minLength={6} required />
+        <h2 className="sm:col-span-2 font-medium">{t.createAccount}</h2>
+        <p className="sm:col-span-2 text-sm text-neutral-600">{t.createAccountHint}</p>
+        <input className="rounded border px-2 py-1" name="full_name" placeholder={t.fullName} required />
+        <input className="rounded border px-2 py-1" name="password" type="password" placeholder={t.password} minLength={6} required />
         <select className="rounded border px-2 py-1" name="role" defaultValue="botanist">
           {roles.map((role) => (
             <option key={role.value} value={role.value}>{role.label}</option>
           ))}
         </select>
-        <button className="btn sm:col-span-2" type="submit">Create</button>
+        <button className="btn sm:col-span-2" type="submit">{t.create}</button>
       </form>
 
       <div className="mt-6 space-y-3">
@@ -67,29 +65,29 @@ export default async function AdminPage({
             ) : (
               <>
                 <input type="hidden" name="role" value={profile.role} />
-                <span>{statusLabel(profile.role)}</span>
+                <span>{statusText(profile.role, t)}</span>
               </>
             )}
             <select className="rounded border px-2 py-1" name="status" defaultValue={profile.status}>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
+              <option value="active">{t.active}</option>
+              <option value="suspended">{t.suspended}</option>
             </select>
-            <button className="rounded border px-2 py-1" type="submit">Save</button>
+            <button className="rounded border px-2 py-1" type="submit">{t.save}</button>
           </form>
         ))}
       </div>
 
-      <h2 className="mt-8 text-xl font-semibold">Recent logins</h2>
+      <h2 className="mt-8 text-xl font-semibold">{t.recentLogins}</h2>
       <ul className="mt-2 divide-y surface text-sm">
         {(logs ?? []).map((log) => {
           const person = Array.isArray(log.profiles) ? log.profiles[0] : log.profiles;
           return (
             <li key={log.id} className="px-3 py-2">
-              {person?.name || person?.id || "Unknown"} · {new Date(log.created_at).toLocaleString()} · {log.success ? "Success" : "Failed"}
+              {person?.name || person?.id || t.unknown} · {new Date(log.created_at).toLocaleString()} · {log.success ? t.success : t.failed}
             </li>
           );
         })}
-        {(logs ?? []).length === 0 && <li className="px-3 py-4 text-neutral-500">No logins yet.</li>}
+        {(logs ?? []).length === 0 && <li className="px-3 py-4 text-neutral-500">{t.noLogins}</li>}
       </ul>
     </main>
   );

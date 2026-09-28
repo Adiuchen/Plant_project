@@ -1,0 +1,179 @@
+import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { numberOrNull, textOrNull } from "@/lib/format";
+
+export type CachedSpecies = {
+  uuid: string;
+  id: string;
+  scientific_name: string;
+  common_name: string | null;
+};
+
+export type FieldDraft = {
+  localId: string;
+  speciesId: string | null;
+  speciesLabel: string;
+  heightM: string;
+  trunkDiameterCm: string;
+  latitude: string;
+  longitude: string;
+  locationName: string;
+  leafTraits: string;
+  flowerFruitTraits: string;
+  healthStatus: string;
+  otherTraits: string;
+  photoUrl: string;
+  photoCaption: string;
+  status: "draft" | "submitted";
+  savedAt: string;
+};
+
+const DB_NAME = "plant-field";
+const DB_VERSION = 1;
+
+function openDb() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("species")) db.createObjectStore("species");
+      if (!db.objectStoreNames.contains("drafts")) db.createObjectStore("drafts", { keyPath: "localId" });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function requestToPromise<T>(request: IDBRequest<T>) {
+  return new Promise<T>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function cacheSpecies(species: CachedSpecies[]) {
+  const db = await openDb();
+  const tx = db.transaction("species", "readwrite");
+  tx.objectStore("species").put(species, "list");
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function loadCachedSpecies() {
+  const db = await openDb();
+  const species = await requestToPromise(
+    db.transaction("species").objectStore("species").get("list"),
+  );
+  db.close();
+  return (species as CachedSpecies[] | undefined) ?? [];
+}
+
+export async function saveDraft(draft: FieldDraft) {
+  const db = await openDb();
+  const tx = db.transaction("drafts", "readwrite");
+  tx.objectStore("drafts").put(draft);
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function listDrafts() {
+  const db = await openDb();
+  const drafts = await requestToPromise(db.transaction("drafts").objectStore("drafts").getAll());
+  db.close();
+  return (drafts as FieldDraft[]).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+}
+
+export async function deleteDraft(localId: string) {
+  const db = await openDb();
+  const tx = db.transaction("drafts", "readwrite");
+  tx.objectStore("drafts").delete(localId);
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export function draftFromForm(formData: FormData, species: CachedSpecies[]): FieldDraft {
+  const speciesId = textOrNull(formData.get("species_id"));
+  const match = species.find((item) => item.uuid === speciesId);
+  const status = String(formData.get("status") || "draft") === "submitted" ? "submitted" : "draft";
+  return {
+    localId: crypto.randomUUID(),
+    speciesId,
+    speciesLabel: match ? `${match.id} · ${match.scientific_name}` : "",
+    heightM: String(formData.get("height_m") || ""),
+    trunkDiameterCm: String(formData.get("trunk_diameter_cm") || ""),
+    latitude: String(formData.get("latitude") || ""),
+    longitude: String(formData.get("longitude") || ""),
+    locationName: String(formData.get("location_name") || ""),
+    leafTraits: String(formData.get("leaf_traits") || ""),
+    flowerFruitTraits: String(formData.get("flower_fruit_traits") || ""),
+    healthStatus: String(formData.get("health_status") || ""),
+    otherTraits: String(formData.get("other_traits") || ""),
+    photoUrl: String(formData.get("photo_url") || ""),
+    photoCaption: String(formData.get("photo_caption") || ""),
+    status,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+export async function syncDrafts() {
+  const supabase = createBrowserSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { uploaded: 0, error: "Sign in before uploading." };
+
+  const drafts = await listDrafts();
+  let uploaded = 0;
+  for (const draft of drafts) {
+    const { data, error } = await supabase
+      .from("plant_records")
+      .insert({
+        botanist_id: user.id,
+        local_id: draft.localId,
+        species_id: draft.speciesId,
+        height_m: numberOrNull(draft.heightM),
+        trunk_diameter_cm: numberOrNull(draft.trunkDiameterCm),
+        leaf_traits: textOrNull(draft.leafTraits),
+        flower_fruit_traits: textOrNull(draft.flowerFruitTraits),
+        health_status: textOrNull(draft.healthStatus),
+        other_traits: textOrNull(draft.otherTraits),
+        location_name: textOrNull(draft.locationName),
+        latitude: numberOrNull(draft.latitude),
+        longitude: numberOrNull(draft.longitude),
+        status: draft.status,
+        sync_status: "synced",
+      })
+      .select("uuid")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        await deleteDraft(draft.localId);
+        uploaded += 1;
+        continue;
+      }
+      return { uploaded, error: error.message };
+    }
+
+    const photoUrl = textOrNull(draft.photoUrl);
+    if (photoUrl && data) {
+      await supabase.from("plant_photos").insert({
+        plant_record_id: data.uuid,
+        storage_path: photoUrl,
+        caption: textOrNull(draft.photoCaption),
+        uploaded_by: user.id,
+      });
+    }
+    await deleteDraft(draft.localId);
+    uploaded += 1;
+  }
+  return { uploaded, error: null as string | null };
+}

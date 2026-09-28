@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCopy } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage({
@@ -7,6 +8,7 @@ export default async function HomePage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
+  const { t } = await getCopy();
   const query = (q ?? "").trim();
   const supabase = await createClient();
 
@@ -27,20 +29,18 @@ export default async function HomePage({
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <section className="surface px-6 py-8">
-        <p className="text-sm font-medium text-forest">Public plant knowledge</p>
-        <h1 className="mt-1 text-3xl font-semibold">Find a species</h1>
-        <p className="mt-2 max-w-xl text-sm text-neutral-600">
-          Search by scientific, common, or local name. Exact GPS locations are not shown here.
-        </p>
+        <p className="text-sm font-medium text-forest">{t.publicKnowledge}</p>
+        <h1 className="mt-1 text-3xl font-semibold">{t.findSpecies}</h1>
+        <p className="mt-2 max-w-xl text-sm text-neutral-600">{t.searchHint}</p>
         <form className="mt-5 flex gap-2" action="/">
           <input
             className="w-full rounded-lg border px-3 py-2"
             name="q"
             defaultValue={query}
-            placeholder="Search plants"
+            placeholder={t.searchPlants}
           />
           <button className="btn" type="submit">
-            Search
+            {t.search}
           </button>
         </form>
       </section>
@@ -54,17 +54,17 @@ export default async function HomePage({
                 {item.scientific_name}
               </span>
               <span className="mt-1 block text-sm text-neutral-600">
-                {[item.common_name, item.local_name].filter(Boolean).join(" · ") || "No common name"}
+                {[item.common_name, item.local_name].filter(Boolean).join(" · ") || t.noCommonName}
               </span>
               <span className="mt-1 block text-sm">
-                {item.conservation_status || "Status not set"}
+                {item.conservation_status || t.statusNotSet}
                 {item.distribution ? ` · ${item.distribution}` : ""}
               </span>
             </Link>
           </li>
         ))}
         {!error && (species ?? []).length === 0 && (
-          <li className="surface px-5 py-8 text-sm text-neutral-500">No species yet.</li>
+          <li className="surface px-5 py-8 text-sm text-neutral-500">{t.noSpeciesYet}</li>
         )}
       </ul>
     </main>

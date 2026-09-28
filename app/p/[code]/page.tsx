@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { PhotoList } from "@/components/PhotoList";
+import { getCopy } from "@/lib/i18n";
 
 export default async function PublicPlantPage({
   params,
@@ -18,6 +19,7 @@ export default async function PublicPlantPage({
     .maybeSingle();
 
   if (!plant) notFound();
+  const { t } = await getCopy();
 
   const { data: photos } = await supabase
     .from("public_plant_photos")
@@ -38,19 +40,19 @@ export default async function PublicPlantPage({
         {[plant.common_name, plant.local_name].filter(Boolean).join(" · ")}
       </p>
       <dl className="mt-4 space-y-2 text-sm">
-        <Field label="Family / genus" value={[plant.family, plant.genus].filter(Boolean).join(" · ")} />
-        <Field label="Conservation status" value={plant.conservation_status} />
-        <Field label="Distribution" value={plant.distribution} />
-        <Field label="Description" value={plant.description} />
-        <Field label="Ecology" value={plant.ecological_info} />
-        <Field label="Cultural significance" value={plant.cultural_significance} />
-        <Field label="Health of this plant" value={plant.health_status} />
+        <Field label={t.familyGenus} value={[plant.family, plant.genus].filter(Boolean).join(" · ")} />
+        <Field label={t.conservationStatus} value={plant.conservation_status} />
+        <Field label={t.distribution} value={plant.distribution} />
+        <Field label={t.description} value={plant.description} />
+        <Field label={t.ecology} value={plant.ecological_info} />
+        <Field label={t.cultural} value={plant.cultural_significance} />
+        <Field label={t.healthOfPlant} value={plant.health_status} />
       </dl>
       <PhotoList photos={photos ?? []} />
       <div className="mt-6">
         {/* QR image is generated on the server for this public page. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={qr} alt="QR code" width={160} height={160} />
+        <img src={qr} alt={t.qrCode} width={160} height={160} />
         <p className="text-xs text-neutral-500">{pageUrl}</p>
       </div>
       </article>

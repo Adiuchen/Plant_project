@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/auth";
+import { getCopy, statusText } from "@/lib/i18n";
 
 export default async function MapPage() {
   const { supabase } = await requireUser(["conservation_officer"]);
+  const { t } = await getCopy();
   const { data, error } = await supabase
     .from("plant_records")
     .select("uuid, id, location_name, latitude, longitude, status, species(scientific_name)")
@@ -10,10 +12,8 @@ export default async function MapPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">Distribution map</h1>
-      <p className="mt-1 text-sm text-neutral-600">
-        Exact coordinates are visible to conservation officers only. Each link opens the point on OpenStreetMap.
-      </p>
+      <h1 className="text-2xl font-semibold">{t.map}</h1>
+      <p className="mt-1 text-sm text-neutral-600">{t.mapIntro}</p>
       {error && <p className="mt-3 text-sm text-red-700">{error.message}</p>}
       <ul className="mt-4 divide-y surface">
         {(data ?? []).map((record) => {
@@ -21,15 +21,15 @@ export default async function MapPage() {
           const mapUrl = `https://www.openstreetmap.org/?mlat=${record.latitude}&mlon=${record.longitude}#map=15/${record.latitude}/${record.longitude}`;
           return (
             <li key={record.uuid} className="px-4 py-3 text-sm">
-              <p className="font-medium">{record.id} · {species?.scientific_name || "Unidentified"}</p>
+              <p className="font-medium">{record.id} · {species?.scientific_name || t.unidentified}</p>
               <p>
-                {record.location_name || "No place name"} · {record.latitude}, {record.longitude} · {record.status}
+                {record.location_name || t.noPlaceName} · {record.latitude}, {record.longitude} · {statusText(record.status, t)}
               </p>
-              <a href={mapUrl} target="_blank" rel="noreferrer">Open map</a>
+              <a href={mapUrl} target="_blank" rel="noreferrer">{t.openMap}</a>
             </li>
           );
         })}
-        {(data ?? []).length === 0 && <li className="px-4 py-6 text-sm text-neutral-500">No GPS records yet.</li>}
+        {(data ?? []).length === 0 && <li className="px-4 py-6 text-sm text-neutral-500">{t.noGps}</li>}
       </ul>
     </main>
   );

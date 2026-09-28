@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { SiteHeader } from "@/components/SiteHeader";
+import { getCopy } from "@/lib/i18n";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -8,14 +9,18 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Plant Records",
-  description: "Smart ground-truthing and digital biodiversity system",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getCopy();
+  return {
+    title: t.siteName,
+    description: t.siteDescription,
+  };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const { locale } = await getCopy();
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html lang={locale} className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full text-ink">
         <SiteHeader />
         {children}

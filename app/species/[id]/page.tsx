@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { PhotoList } from "@/components/PhotoList";
+import { getCopy } from "@/lib/i18n";
 
 export default async function SpeciesPage({
   params,
@@ -11,6 +12,7 @@ export default async function SpeciesPage({
   const supabase = await createClient();
   const { data: species } = await supabase.from("species").select("*").eq("uuid", id).maybeSingle();
   if (!species) notFound();
+  const { t } = await getCopy();
 
   const { data: photos } = await supabase
     .from("plant_photos")
@@ -26,11 +28,11 @@ export default async function SpeciesPage({
         {[species.common_name, species.local_name].filter(Boolean).join(" · ")}
       </p>
       <dl className="mt-5 space-y-3 text-sm">
-        <Info label="Conservation status" value={species.conservation_status} />
-        <Info label="Distribution" value={species.distribution} />
-        <Info label="Description" value={species.description} />
-        <Info label="Ecology" value={species.ecological_info} />
-        <Info label="Cultural significance" value={species.cultural_significance} />
+        <Info label={t.conservationStatus} value={species.conservation_status} />
+        <Info label={t.distribution} value={species.distribution} />
+        <Info label={t.description} value={species.description} />
+        <Info label={t.ecology} value={species.ecological_info} />
+        <Info label={t.cultural} value={species.cultural_significance} />
       </dl>
       <PhotoList photos={photos ?? []} />
       </article>

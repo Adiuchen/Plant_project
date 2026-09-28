@@ -1,4 +1,6 @@
-export function SpeciesForm({
+import { getCopy } from "@/lib/i18n";
+
+export async function SpeciesForm({
   action,
   species,
 }: {
@@ -18,24 +20,25 @@ export function SpeciesForm({
     cultural_significance: string | null;
   };
 }) {
+  const { t } = await getCopy();
   return (
     <form action={action} className="space-y-3">
       {species && <input type="hidden" name="id" value={species.uuid} />}
-      <Field name="scientific_name" label="Scientific name" required defaultValue={species?.scientific_name} />
-      <Field name="common_name" label="Common name" defaultValue={species?.common_name} />
-      <Field name="local_name" label="Local name" defaultValue={species?.local_name} />
+      <Field name="scientific_name" label={t.scientificName} required defaultValue={species?.scientific_name} />
+      <Field name="common_name" label={t.commonName} defaultValue={species?.common_name} />
+      <Field name="local_name" label={t.localName} defaultValue={species?.local_name} />
       <div className="grid grid-cols-2 gap-3">
-        <Field name="family" label="Family" defaultValue={species?.family} />
-        <Field name="genus" label="Genus" defaultValue={species?.genus} />
+        <Field name="family" label={t.family} defaultValue={species?.family} />
+        <Field name="genus" label={t.genus} defaultValue={species?.genus} />
       </div>
-      <Field name="conservation_status" label="Conservation status" defaultValue={species?.conservation_status} />
-      <Field name="distribution" label="General distribution" defaultValue={species?.distribution} />
-      <Field name="description" label="Description" area defaultValue={species?.description} />
-      <Field name="ecological_info" label="Ecology" area defaultValue={species?.ecological_info} />
-      <Field name="cultural_significance" label="Cultural significance" area defaultValue={species?.cultural_significance} />
-      <Field name="photo_url" label="Reference photo URL" />
-      <Field name="photo_caption" label="Photo caption" />
-      <button className="btn" type="submit">Save</button>
+      <Field name="conservation_status" label={t.conservationStatus} defaultValue={species?.conservation_status} />
+      <Field name="distribution" label={t.distribution} defaultValue={species?.distribution} />
+      <Field name="description" label={t.description} area defaultValue={species?.description} />
+      <Field name="ecological_info" label={t.ecology} area defaultValue={species?.ecological_info} />
+      <Field name="cultural_significance" label={t.cultural} area defaultValue={species?.cultural_significance} />
+      <Field name="photo_url" label={t.referencePhoto} />
+      <Field name="photo_caption" label={t.photoCaption} />
+      <button className="btn" type="submit">{t.save}</button>
     </form>
   );
 }

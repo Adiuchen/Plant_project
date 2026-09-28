@@ -1,5 +1,6 @@
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
+import { getCopy } from "@/lib/i18n";
 import { reviewRecord } from "./actions";
 
 export default async function OfficerHome({
@@ -9,6 +10,7 @@ export default async function OfficerHome({
 }) {
   const { status = "submitted", q = "", error } = await searchParams;
   const { supabase } = await requireUser(["conservation_officer"]);
+  const { t } = await getCopy();
 
   let request = supabase
     .from("plant_records")
@@ -29,23 +31,23 @@ export default async function OfficerHome({
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Review records</h1>
-        <a className="text-sm underline" href="/officer/report">Export CSV</a>
+        <h1 className="text-2xl font-semibold">{t.reviewRecords}</h1>
+        <a className="text-sm underline" href="/officer/report">{t.exportCsv}</a>
       </div>
       {(error || queryError) && (
         <p className="mt-3 text-sm text-red-700">{error || queryError?.message}</p>
       )}
       <form className="mt-4 flex flex-wrap gap-2" action="/officer">
-        <input className="rounded border px-2 py-1" name="q" defaultValue={q} placeholder="Species or place" />
+        <input className="rounded border px-2 py-1" name="q" defaultValue={q} placeholder={t.speciesOrPlace} />
         <select className="rounded border px-2 py-1" name="status" defaultValue={status}>
-          <option value="submitted">Submitted</option>
-          <option value="needs_revision">Changes requested</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="draft">Draft</option>
-          <option value="all">All</option>
+          <option value="submitted">{t.submitted}</option>
+          <option value="needs_revision">{t.changesRequested}</option>
+          <option value="approved">{t.approved}</option>
+          <option value="rejected">{t.rejected}</option>
+          <option value="draft">{t.draft}</option>
+          <option value="all">{t.all}</option>
         </select>
-        <button className="btn" type="submit">Filter</button>
+        <button className="btn" type="submit">{t.filter}</button>
       </form>
       <div className="mt-4 space-y-4">
         {filtered.map((record) => {
@@ -53,30 +55,30 @@ export default async function OfficerHome({
           const botanist = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles;
           return (
             <article key={record.uuid} className="surface p-4">
-              <h2 className="font-medium">{record.id} · {species?.scientific_name || "Unidentified"}</h2>
+              <h2 className="font-medium">{record.id} · {species?.scientific_name || t.unidentified}</h2>
               <p className="text-sm text-neutral-600">
-                {species?.common_name || "No common name"} · {botanist?.name || "Unknown botanist"} · <StatusBadge status={record.status} />
+                {species?.common_name || t.noCommonName} · {botanist?.name || t.unknownBotanist} · <StatusBadge status={record.status} />
               </p>
               <p className="text-sm">
-                {record.location_name || "No place name"}
+                {record.location_name || t.noPlaceName}
                 {record.latitude != null ? ` · ${record.latitude}, ${record.longitude}` : ""}
-                {record.health_status ? ` · Health: ${record.health_status}` : ""}
+                {record.health_status ? ` · ${t.health}: ${record.health_status}` : ""}
               </p>
               {record.status === "submitted" || record.status === "needs_revision" ? (
                 <form action={reviewRecord} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={record.uuid} />
-                  <textarea className="w-full rounded border px-2 py-1" name="review_note" rows={2} placeholder="Note to the botanist" defaultValue={record.review_note ?? ""} />
+                  <textarea className="w-full rounded border px-2 py-1" name="review_note" rows={2} placeholder={t.noteToBotanist} defaultValue={record.review_note ?? ""} />
                   <div className="flex gap-2">
-                    <button className="btn" name="status" value="approved">Approve</button>
-                    <button className="rounded border px-3 py-1" name="status" value="needs_revision">Request changes</button>
-                    <button className="rounded border border-red-300 px-3 py-1 text-red-800" name="status" value="rejected">Reject</button>
+                    <button className="btn" name="status" value="approved">{t.approve}</button>
+                    <button className="rounded border px-3 py-1" name="status" value="needs_revision">{t.requestChanges}</button>
+                    <button className="rounded border border-red-300 px-3 py-1 text-red-800" name="status" value="rejected">{t.reject}</button>
                   </div>
                 </form>
               ) : null}
             </article>
           );
         })}
-        {filtered.length === 0 && <p className="text-sm text-neutral-500">No records for this filter.</p>}
+        {filtered.length === 0 && <p className="text-sm text-neutral-500">{t.noRecordsFilter}</p>}
       </div>
     </main>
   );

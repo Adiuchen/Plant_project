@@ -3,8 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { logout } from "@/app/login/actions";
-import { saveEmail, type SaveEmailState } from "@/app/profile/actions";
-import { statusLabel } from "@/lib/format";
+import { saveEmail, setLocale, type SaveEmailState } from "@/app/profile/actions";
+import type { Copy, Locale } from "@/lib/i18n";
 
 type ProfileSummary = {
   name: string;
@@ -13,7 +13,17 @@ type ProfileSummary = {
   role: string;
 };
 
-export function ProfilePanel({ profile }: { profile: ProfileSummary }) {
+export function ProfilePanel({
+  profile,
+  locale,
+  t,
+  roleLabel,
+}: {
+  profile: ProfileSummary;
+  locale: Locale;
+  t: Copy;
+  roleLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [state, formAction, pending] = useActionState(saveEmail, null as SaveEmailState);
@@ -33,7 +43,7 @@ export function ProfilePanel({ profile }: { profile: ProfileSummary }) {
   return (
     <>
       <button className="relative rounded-full px-3 py-1.5 pr-4 hover:bg-emerald-50" type="button" onClick={() => setOpen(true)}>
-        Profile
+        {t.profile}
         {!email && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-600" />}
       </button>
       {open && mounted && createPortal(
@@ -48,12 +58,12 @@ export function ProfilePanel({ profile }: { profile: ProfileSummary }) {
             >
               <div className="flex items-center justify-between border-b border-neutral-200 bg-neutral-100 px-4 py-2.5">
                 <h2 id="profile-title" className="text-sm font-semibold">
-                  Profile
+                  {t.profile}
                 </h2>
                 <button
                   className="grid h-7 w-7 place-items-center rounded-md text-lg leading-none text-neutral-600 hover:bg-neutral-200"
                   type="button"
-                  aria-label="Close"
+                  aria-label={t.close}
                   onClick={() => setOpen(false)}
                 >
                   ×
@@ -67,20 +77,20 @@ export function ProfilePanel({ profile }: { profile: ProfileSummary }) {
                   <div>
                     <p className="font-medium">{profile.name}</p>
                     <p className="text-sm text-neutral-600">
-                      {profile.id} · {statusLabel(profile.role)}
+                      {profile.id} · {roleLabel}
                     </p>
                   </div>
                 </div>
                 {!email && (
                   <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
-                    Add a personal email so you can reset your password later.
+                    {t.emailReminder}
                   </p>
                 )}
-                {state?.saved && <p className="mt-4 text-sm text-green-800">Email saved.</p>}
+                {state?.saved && <p className="mt-4 text-sm text-green-800">{t.emailSaved}</p>}
                 {state?.error && <p className="mt-4 text-sm text-red-700">{state.error}</p>}
                 <form action={formAction} className="mt-4 space-y-3">
                   <label className="block text-sm">
-                    Personal email
+                    {t.personalEmail}
                     <input
                       className="mt-1 w-full rounded-lg border px-3 py-2"
                       name="email"
@@ -91,12 +101,27 @@ export function ProfilePanel({ profile }: { profile: ProfileSummary }) {
                     />
                   </label>
                   <button className="btn" type="submit" disabled={pending}>
-                    {pending ? "Saving…" : "Save"}
+                    {pending ? t.saving : t.save}
                   </button>
+                </form>
+                <form action={setLocale} className="mt-6">
+                  <label className="block text-sm">
+                    {t.language}
+                    <select
+                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                      name="locale"
+                      defaultValue={locale}
+                      key={locale}
+                      onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                    >
+                      <option value="en">{t.english}</option>
+                      <option value="ms">{t.malay}</option>
+                    </select>
+                  </label>
                 </form>
                 <form action={logout} className="mt-6 border-t border-neutral-200 pt-4">
                   <button className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700" type="submit">
-                    Log out
+                    {t.logout}
                   </button>
                 </form>
               </div>
