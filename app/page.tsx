@@ -13,8 +13,8 @@ export default async function HomePage({
   const supabase = await createClient();
 
   let request = supabase
-    .from("species")
-    .select("uuid, id, scientific_name, common_name, local_name, conservation_status, distribution")
+    .from("public_plant_pages")
+    .select("qr_code, scientific_name, common_name, local_name, conservation_status, health_status")
     .order("scientific_name")
     .limit(50);
 
@@ -24,7 +24,7 @@ export default async function HomePage({
     );
   }
 
-  const { data: species, error } = await request;
+  const { data: plants, error } = await request;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -46,24 +46,21 @@ export default async function HomePage({
       </section>
       {error && <p className="mt-4 text-sm text-red-700">{error.message}</p>}
       <ul className="mt-6 grid gap-3">
-        {(species ?? []).map((item) => (
-          <li key={item.id}>
-            <Link href={`/species/${item.uuid}`} className="surface block px-5 py-4 transition hover:-translate-y-0.5 hover:shadow-md">
-              <span className="font-medium">
-                <span className="mr-2 text-forest">{item.id}</span>
-                {item.scientific_name}
-              </span>
+        {(plants ?? []).map((item) => (
+          <li key={item.qr_code}>
+            <Link href={`/p/${item.qr_code}`} className="surface block px-5 py-4 transition hover:-translate-y-0.5 hover:shadow-md">
+              <span className="font-medium">{item.scientific_name}</span>
               <span className="mt-1 block text-sm text-neutral-600">
                 {[item.common_name, item.local_name].filter(Boolean).join(" · ") || t.noCommonName}
               </span>
               <span className="mt-1 block text-sm">
                 {item.conservation_status || t.statusNotSet}
-                {item.distribution ? ` · ${item.distribution}` : ""}
+                {item.health_status ? ` · ${t.health}: ${item.health_status}` : ""}
               </span>
             </Link>
           </li>
         ))}
-        {!error && (species ?? []).length === 0 && (
+        {!error && (plants ?? []).length === 0 && (
           <li className="surface px-5 py-8 text-sm text-neutral-500">{t.noSpeciesYet}</li>
         )}
       </ul>

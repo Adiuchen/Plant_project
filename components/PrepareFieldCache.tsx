@@ -29,6 +29,7 @@ export function PrepareFieldCache({
       const { data, error } = await supabase
         .from("species")
         .select("uuid, id, scientific_name, common_name")
+        .is("hidden_at", null)
         .order("scientific_name");
       if (error) throw error;
       await cacheSpecies(data ?? []);

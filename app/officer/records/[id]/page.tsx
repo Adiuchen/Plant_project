@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PageHeading } from "@/components/PageHeading";
 import { PhotoList } from "@/components/PhotoList";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
@@ -38,7 +38,8 @@ export default async function OfficerRecordPage({
   const { data: photos, error: photoError } = await supabase
     .from("plant_photos")
     .select("id, storage_path, caption")
-    .eq("plant_record_id", record.uuid);
+    .eq("plant_record_id", record.uuid)
+    .is("hidden_at", null);
 
   const species = Array.isArray(record.species) ? record.species[0] : record.species;
   const botanist = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles;
@@ -52,13 +53,11 @@ export default async function OfficerRecordPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
-      <Link className="text-sm" href={`/officer?${listQuery}`}>
-        {t.back}
-      </Link>
-      <article className="surface mt-3 px-6 py-7">
-        <h1 className="text-2xl font-semibold">
-          {record.id} · {species?.scientific_name || t.unidentifiedPlant}
-        </h1>
+      <article className="surface px-6 py-7">
+        <PageHeading
+          backLabel={t.backPage}
+          title={`${record.id} · ${species?.scientific_name || t.unidentifiedPlant}`}
+        />
         <p className="mt-1 text-sm text-neutral-600">
           {species?.common_name || t.noCommonName}
           {species?.local_name ? ` · ${species.local_name}` : ""} · {botanist?.name || t.unknownBotanist} ·{" "}

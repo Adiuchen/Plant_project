@@ -14,6 +14,7 @@ import {
   type FieldDraft,
 } from "@/lib/field-drafts";
 import type { Copy } from "@/lib/i18n";
+import { PHOTO_TOO_LARGE, PHOTO_WRONG_TYPE, photoProblemMessage } from "@/lib/photos";
 
 export function FieldRecordForm({
   species,
@@ -30,6 +31,7 @@ export function FieldRecordForm({
   const [online, setOnline] = useState(true);
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState("");
 
   async function refreshDrafts() {
     setDrafts(await listDrafts());
@@ -40,7 +42,7 @@ export function FieldRecordForm({
     const result = await syncDrafts();
     await refreshDrafts();
     setUploading(false);
-    if (result.error) setMessage(result.error);
+    if (result.error) setMessage(photoMessage(result.error, t));
     else if (result.uploaded > 0) {
       setMessage(`${t.uploadedCount}: ${result.uploaded}`);
       router.refresh();
@@ -96,9 +98,23 @@ export function FieldRecordForm({
       onSubmit={async (event) => {
         if (navigator.onLine) return;
         event.preventDefault();
-        const draft = draftFromForm(new FormData(event.currentTarget), choices);
+        const formData = new FormData(event.currentTarget);
+        const draft = draftFromForm(formData, choices);
+        const photo = formData.get("photo");
+        if (photo instanceof File && photo.size > 0) {
+          const problem = photoProblemMessage(photo);
+          if (problem) {
+            setMessage(photoMessage(problem, t));
+            return;
+          }
+          draft.photoBlob = photo;
+          draft.photoName = photo.name;
+          draft.photoType = photo.type;
+        }
         await saveDraft(draft);
         event.currentTarget.reset();
+        if (preview) URL.revokeObjectURL(preview);
+        setPreview("");
         setMessage(t.savedOnPhone);
         await refreshDrafts();
       }}
@@ -108,37 +124,76 @@ export function FieldRecordForm({
       </p>
       {serverError && <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-800">{serverError}</p>}
       {message && <p className="text-sm text-neutral-700">{message}</p>}
-      <label className="block text-sm">
-        {t.species}
-        <select className="mt-1 w-full rounded border px-2 py-1" name="species_id">
-          <option value="">{t.notIdentified}</option>
-          {choices.map((item) => (
-            <option key={item.uuid} value={item.uuid}>
-              {item.id} · {item.scientific_name}
-              {item.common_name ? ` (${item.common_name})` : ""}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div className="grid grid-cols-2 gap-3">
-        <Field name="height_m" label={t.height} />
-        <Field name="trunk_diameter_cm" label={t.trunk} />
-        <Field name="latitude" label={t.latitude} />
-        <Field name="longitude" label={t.longitude} />
-      </div>
-      <button className="rounded border px-3 py-1 text-sm" type="button" onClick={useMyLocation}>
-        {t.useMyLocation}
-      </button>
-      <Field name="location_name" label={t.placeName} />
-      <Field name="leaf_traits" label={t.leafTraits} />
-      <Field name="flower_fruit_traits" label={t.flowerFruit} />
-      <Field name="health_status" label={t.health} />
-      <Field name="other_traits" label={t.otherTraits} area />
-      <Field name="photo_url" label={t.photoUrl} />
-      <Field name="photo_caption" label={t.photoCaption} />
+      <section className="surface space-y-3 p-4">
+        <h2 className="font-medium">{t.photos}</h2>
+        <label className="block text-sm">
+          {t.photoUrl}
+          <input
+            className="mt-1 w-full rounded-lg border px-3 py-2"
+            name="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+            capture="environment"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (preview) URL.revokeObjectURL(preview);
+              if (!file || file.size === 0) {
+                setPreview("");
+                return;
+              }
+              const problem = photoProblemMessage(file);
+              if (problem) {
+                setMessage(photoMessage(problem, t));
+                event.target.value = "";
+                setPreview("");
+                return;
+              }
+              setMessage("");
+              setPreview(URL.createObjectURL(file));
+            }}
+          />
+          <span className="mt-1 block text-neutral-500">{t.photoHint}</span>
+        </label>
+        {preview && (
+          // Preview is a local file chosen on this phone.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt={t.photoUrl} className="max-h-80 rounded-lg border" />
+        )}
+        <Field name="photo_caption" label={t.photoCaption} />
+      </section>
+      <section className="surface space-y-3 p-4">
+        <label className="block text-sm">
+          {t.species}
+          <select className="mt-1 w-full rounded-lg border px-3 py-2" name="species_id">
+            <option value="">{t.notIdentified}</option>
+            {choices.map((item) => (
+              <option key={item.uuid} value={item.uuid}>
+                {item.id} · {item.scientific_name}
+                {item.common_name ? ` (${item.common_name})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Field name="health_status" label={t.health} />
+        <Field name="leaf_traits" label={t.leafTraits} />
+        <Field name="flower_fruit_traits" label={t.flowerFruit} />
+        <Field name="other_traits" label={t.otherTraits} area />
+      </section>
+      <section className="surface space-y-3 p-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field name="latitude" label={t.latitude} />
+          <Field name="longitude" label={t.longitude} />
+          <Field name="height_m" label={t.height} />
+          <Field name="trunk_diameter_cm" label={t.trunk} />
+        </div>
+        <button className="rounded border px-3 py-1 text-sm" type="button" onClick={useMyLocation}>
+          {t.useMyLocation}
+        </button>
+        <Field name="location_name" label={t.placeName} />
+      </section>
       <label className="block text-sm">
         {t.saveAs}
-        <select className="mt-1 w-full rounded border px-2 py-1" name="status" defaultValue="submitted">
+        <select className="mt-1 w-full rounded-lg border px-3 py-2" name="status" defaultValue="submitted">
           <option value="draft">{t.draft}</option>
           <option value="submitted">{t.submitForReview}</option>
         </select>
@@ -170,14 +225,20 @@ export function FieldRecordForm({
   );
 }
 
+function photoMessage(error: string, t: Copy) {
+  if (error === PHOTO_TOO_LARGE) return t.photoTooLarge;
+  if (error === PHOTO_WRONG_TYPE) return t.photoType;
+  return error;
+}
+
 function Field({ name, label, area }: { name: string; label: string; area?: boolean }) {
   return (
     <label className="block text-sm">
       {label}
       {area ? (
-        <textarea className="mt-1 w-full rounded border px-2 py-1" name={name} rows={3} />
+        <textarea className="mt-1 w-full rounded-lg border px-3 py-2" name={name} rows={3} />
       ) : (
-        <input className="mt-1 w-full rounded border px-2 py-1" name={name} />
+        <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} />
       )}
     </label>
   );

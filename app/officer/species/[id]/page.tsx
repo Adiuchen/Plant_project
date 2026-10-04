@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import { ConfirmDelete } from "@/components/ConfirmDelete";
+import { PageHeading } from "@/components/PageHeading";
 import { SpeciesForm } from "@/components/SpeciesForm";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
-import { deleteSpecies, updateSpecies } from "../../actions";
+import { updateSpecies } from "../../actions";
 
 export default async function EditSpeciesPage({
   params,
@@ -16,27 +16,21 @@ export default async function EditSpeciesPage({
   const { error } = await searchParams;
   const { supabase } = await requireUser(["conservation_officer"]);
   const { t } = await getCopy();
-  const { data: species } = await supabase.from("species").select("*").eq("uuid", id).maybeSingle();
+  const { data: species } = await supabase.from("species").select("*").eq("uuid", id).is("hidden_at", null).maybeSingle();
   if (!species) notFound();
+  const { data: photos, error: photoError } = await supabase
+    .from("plant_photos")
+    .select("id, storage_path, caption")
+    .eq("species_id", id)
+    .is("plant_record_id", null)
+    .is("hidden_at", null)
+    .order("created_at", { ascending: false });
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-4 text-2xl font-semibold">{t.editSpecies}</h1>
-      {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
-      <SpeciesForm action={updateSpecies} species={species} />
-      <div className="mt-6">
-        <ConfirmDelete
-          action={deleteSpecies}
-          id={species.uuid}
-          next={`/officer/species/${species.uuid}`}
-          label={t.deleteSpecies}
-          title={t.confirmDeleteTitle}
-          message={`${species.id} · ${species.scientific_name}. ${t.confirmDeleteText}`}
-          confirmLabel={t.confirm}
-          cancelLabel={t.cancel}
-          className="text-sm text-red-700"
-        />
-      </div>
+      <PageHeading backLabel={t.backPage} title={t.editSpecies} className="mb-4 flex flex-wrap items-center gap-3" />
+      {(error || photoError) && <p className="mb-3 text-sm text-red-700">{error || photoError?.message}</p>}
+      <SpeciesForm action={updateSpecies} species={species} photos={photos ?? []} />
     </main>
   );
 }

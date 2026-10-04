@@ -1,3 +1,4 @@
+import { PageHeading } from "@/components/PageHeading";
 import { requireUser } from "@/lib/auth";
 import { getCopy, statusText } from "@/lib/i18n";
 import { createAccount, updateAccount } from "./actions";
@@ -26,7 +27,7 @@ export default async function AdminPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-semibold">{t.users}</h1>
+      <PageHeading backLabel={t.backPage} title={t.users} />
       {(error || profileError) && (
         <p className="mt-3 text-sm text-red-700">{error || profileError?.message}</p>
       )}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
+import { PageHeading } from "@/components/PageHeading";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
 import { deleteSpecies } from "../actions";
@@ -15,16 +16,16 @@ export default async function SpeciesListPage({
   const { data, error } = await supabase
     .from("species")
     .select("uuid, id, scientific_name, common_name, conservation_status")
+    .is("hidden_at", null)
     .order("scientific_name");
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t.species}</h1>
-        <Link className="btn" href="/officer/species/new">
-          {t.addSpecies}
-        </Link>
-      </div>
+      <PageHeading
+        backLabel={t.backPage}
+        title={t.species}
+        extra={<Link className="btn" href="/officer/species/new">{t.addSpecies}</Link>}
+      />
       {(error || actionError) && <p className="mt-3 text-sm text-red-700">{error?.message || actionError}</p>}
       <ul className="mt-4 divide-y surface">
         {(data ?? []).map((item) => (

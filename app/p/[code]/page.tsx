@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { PageHeading } from "@/components/PageHeading";
 import { PhotoList } from "@/components/PhotoList";
 import { getCopy } from "@/lib/i18n";
 
@@ -35,11 +36,16 @@ export default async function PublicPlantPage({
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <article className="surface px-6 py-7">
-      <h1 className="text-3xl font-semibold">{plant.scientific_name}</h1>
+      <PageHeading
+        backLabel={t.backPage}
+        title={plant.scientific_name}
+        className="flex flex-wrap items-center gap-3"
+        titleClassName="text-3xl font-semibold"
+      />
       <p className="text-neutral-700">
         {[plant.common_name, plant.local_name].filter(Boolean).join(" · ")}
       </p>
-      <dl className="mt-4 space-y-2 text-sm">
+      <div className="mt-4 space-y-2 text-sm">
         <Field label={t.familyGenus} value={[plant.family, plant.genus].filter(Boolean).join(" · ")} />
         <Field label={t.conservationStatus} value={plant.conservation_status} />
         <Field label={t.distribution} value={plant.distribution} />
@@ -47,7 +53,7 @@ export default async function PublicPlantPage({
         <Field label={t.ecology} value={plant.ecological_info} />
         <Field label={t.cultural} value={plant.cultural_significance} />
         <Field label={t.healthOfPlant} value={plant.health_status} />
-      </dl>
+      </div>
       <PhotoList photos={photos ?? []} />
       <div className="mt-6">
         {/* QR image is generated on the server for this public page. */}
@@ -64,8 +70,8 @@ function Field({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (
     <div>
-      <dt className="font-medium">{label}</dt>
-      <dd className="whitespace-pre-wrap">{value}</dd>
+      <p className="font-medium">{label}</p>
+      <p className="whitespace-pre-wrap">{value}</p>
     </div>
   );
 }

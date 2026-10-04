@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeading } from "@/components/PageHeading";
 import { PendingDrafts } from "@/components/PendingDrafts";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
@@ -15,12 +16,11 @@ export default async function BotanistHome() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t.fieldRecords}</h1>
-        <Link className="btn" href="/botanist/new">
-          {t.newRecord}
-        </Link>
-      </div>
+      <PageHeading
+        backLabel={t.backPage}
+        title={t.fieldRecords}
+        extra={<Link className="btn" href="/botanist/new">{t.newRecord}</Link>}
+      />
       {error && <p className="mt-4 text-sm text-red-700">{error.message}</p>}
       <PendingDrafts t={t} />
       <div className="surface mt-4 overflow-hidden">

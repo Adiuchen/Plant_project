@@ -1,5 +1,6 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 import { numberOrNull, textOrNull } from "@/lib/format";
+import { photoProblemMessage, uploadPlantPhoto } from "@/lib/photos";
 
 export type CachedSpecies = {
   uuid: string;
@@ -23,6 +24,9 @@ export type FieldDraft = {
   otherTraits: string;
   photoUrl: string;
   photoCaption: string;
+  photoName?: string;
+  photoType?: string;
+  photoBlob?: Blob;
   status: "draft" | "submitted";
   savedAt: string;
 };
@@ -116,7 +120,7 @@ export function draftFromForm(formData: FormData, species: CachedSpecies[]): Fie
     flowerFruitTraits: String(formData.get("flower_fruit_traits") || ""),
     healthStatus: String(formData.get("health_status") || ""),
     otherTraits: String(formData.get("other_traits") || ""),
-    photoUrl: String(formData.get("photo_url") || ""),
+    photoUrl: "",
     photoCaption: String(formData.get("photo_caption") || ""),
     status,
     savedAt: new Date().toISOString(),
@@ -163,11 +167,23 @@ export async function syncDrafts() {
       return { uploaded, error: error.message };
     }
 
-    const photoUrl = textOrNull(draft.photoUrl);
-    if (photoUrl && data) {
+    let storagePath = textOrNull(draft.photoUrl);
+    if (draft.photoBlob && draft.photoBlob.size > 0 && data) {
+      const file = new File([draft.photoBlob], draft.photoName || "plant-photo.jpg", {
+        type: draft.photoType || draft.photoBlob.type || "image/jpeg",
+      });
+      const problem = photoProblemMessage(file);
+      if (problem) return { uploaded, error: problem };
+      const uploadedPhoto = await uploadPlantPhoto(supabase, user.id, file);
+      if (uploadedPhoto.error || !uploadedPhoto.path) {
+        return { uploaded, error: uploadedPhoto.error ?? "Could not upload the photo." };
+      }
+      storagePath = uploadedPhoto.path;
+    }
+    if (storagePath && data) {
       await supabase.from("plant_photos").insert({
         plant_record_id: data.uuid,
-        storage_path: photoUrl,
+        storage_path: storagePath,
         caption: textOrNull(draft.photoCaption),
         uploaded_by: user.id,
       });

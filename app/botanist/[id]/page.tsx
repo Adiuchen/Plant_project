@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PageHeading } from "@/components/PageHeading";
+import { PhotoList } from "@/components/PhotoList";
+import { StatusBadge } from "@/components/StatusBadge";
 import QRCode from "qrcode";
 import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
-import { getCopy, statusText } from "@/lib/i18n";
-import { generateQr, resubmit } from "../actions";
+import { getCopy } from "@/lib/i18n";
+import { addRecordPhoto, generateQr, resubmit } from "../actions";
 
 export default async function RecordDetail({
   params,
@@ -26,9 +29,19 @@ export default async function RecordDetail({
 
   if (!record) notFound();
 
-  const { data: species } = await supabase.from("species").select("uuid, id, scientific_name").order("scientific_name");
+  const { data: species } = await supabase
+    .from("species")
+    .select("uuid, id, scientific_name")
+    .is("hidden_at", null)
+    .order("scientific_name");
+  const { data: photos } = await supabase
+    .from("plant_photos")
+    .select("id, storage_path, caption")
+    .eq("plant_record_id", record.uuid)
+    .is("hidden_at", null);
   const speciesName = Array.isArray(record.species) ? record.species[0]?.scientific_name : record.species?.scientific_name;
   const editable = record.status === "draft" || record.status === "needs_revision";
+  const canAddPhoto = editable || record.status === "submitted";
 
   let qrImage: string | null = null;
   if (record.qr_code) {
@@ -40,11 +53,23 @@ export default async function RecordDetail({
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
-      <Link href="/botanist" className="text-sm">{t.back}</Link>
-      <h1 className="mt-2 text-2xl font-semibold">{speciesName || t.unidentifiedPlant}</h1>
-      <p className="text-sm">{t.status}: {statusText(record.status, t)}</p>
+      <PageHeading backLabel={t.backPage} title={`${record.id} · ${speciesName || t.unidentifiedPlant}`} />
+      <p className="mt-2 text-sm"><StatusBadge status={record.status} /></p>
       {record.review_note && <p className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm">{t.officerNote}: {record.review_note}</p>}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+
+      <section className="surface mt-4 p-4">
+        <h2 className="font-medium">{t.photos}</h2>
+        {photos && photos.length > 0 ? <PhotoList photos={photos} /> : <p className="mt-2 text-sm text-neutral-500">{t.noPhotos}</p>}
+        {canAddPhoto && (
+          <form action={addRecordPhoto} className="mt-3 space-y-2">
+            <input type="hidden" name="id" value={record.uuid} />
+            <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" capture="environment" />
+            <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo_caption" placeholder={t.photoCaption} />
+            <button className="btn" type="submit">{t.addPhoto}</button>
+          </form>
+        )}
+      </section>
 
       {editable ? (
         <form action={resubmit} className="mt-4 space-y-3">
@@ -72,7 +97,7 @@ export default async function RecordDetail({
           <button className="btn" type="submit">{t.submitAgain}</button>
         </form>
       ) : (
-        <dl className="mt-4 space-y-1 text-sm">
+        <dl className="surface mt-4 grid gap-3 p-4 text-sm sm:grid-cols-2">
           <Row label={t.place} value={record.location_name} />
           <Row label={t.gps} value={record.latitude != null ? `${record.latitude}, ${record.longitude}` : null} />
           <Row label={t.height} value={record.height_m} />
@@ -107,7 +132,7 @@ function Input({ name, label, defaultValue }: { name: string; label: string; def
   return (
     <label className="block text-sm">
       {label}
-      <input className="mt-1 w-full rounded border px-2 py-1" name={name} defaultValue={defaultValue ?? ""} />
+      <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} defaultValue={defaultValue ?? ""} />
     </label>
   );
 }
@@ -115,8 +140,8 @@ function Input({ name, label, defaultValue }: { name: string; label: string; def
 function Row({ label, value }: { label: string; value: string | number | null }) {
   return (
     <div>
-      <dt className="inline font-medium">{label}: </dt>
-      <dd className="inline">{value ?? "—"}</dd>
+      <dt className="font-medium">{label}</dt>
+      <dd className="text-neutral-700">{value ?? "—"}</dd>
     </div>
   );
 }

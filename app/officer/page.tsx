@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeading } from "@/components/PageHeading";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
@@ -31,10 +32,11 @@ export default async function OfficerHome({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t.reviewRecords}</h1>
-        <a className="text-sm underline" href="/officer/report">{t.exportCsv}</a>
-      </div>
+      <PageHeading
+        backLabel={t.backPage}
+        title={t.reviewRecords}
+        extra={<a className="text-sm underline" href="/officer/report">{t.exportCsv}</a>}
+      />
       {(error || queryError) && (
         <p className="mt-3 text-sm text-red-700">{error || queryError?.message}</p>
       )}

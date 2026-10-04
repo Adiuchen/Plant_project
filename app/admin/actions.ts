@@ -68,12 +68,28 @@ export async function createAccount(formData: FormData) {
 export async function updateAccount(formData: FormData) {
   const { supabase } = await requireUser(["administrator"]);
   const id = String(formData.get("id"));
+  const status = String(formData.get("status"));
+  if (status !== "active" && status !== "suspended") {
+    redirect("/admin?error=" + encodeURIComponent("Choose active or suspended."));
+  }
+
+  const { data: target } = await supabase.from("profiles").select("role").eq("uuid", id).maybeSingle();
+  if (!target) {
+    redirect("/admin?error=" + encodeURIComponent("Account not found."));
+  }
+
+  let role = target.role;
+  if (target.role === "botanist" || target.role === "conservation_officer") {
+    const nextRole = String(formData.get("role"));
+    if (nextRole !== "botanist" && nextRole !== "conservation_officer") {
+      redirect("/admin?error=" + encodeURIComponent("Choose Botanist or Officer."));
+    }
+    role = nextRole;
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .update({
-      role: String(formData.get("role")),
-      status: String(formData.get("status")),
-    })
+    .update({ role, status })
     .eq("uuid", id);
 
   if (error) redirect(`/admin?error=${encodeURIComponent(error.message)}`);

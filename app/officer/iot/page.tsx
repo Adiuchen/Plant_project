@@ -1,7 +1,7 @@
 import { IotDashboard } from "@/components/IotDashboard";
 import { requireUser } from "@/lib/auth";
 
-export default async function IotPage({
+export default async function OfficerIotPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
