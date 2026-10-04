@@ -18,6 +18,10 @@
     letter-spacing: -0.03em;
   }
 
+  [popover]:not(:popover-open) {
+    display: none;
+  }
+
   input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {

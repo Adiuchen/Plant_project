@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { SpeciesForm } from "@/components/SpeciesForm";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
@@ -23,10 +24,19 @@ export default async function EditSpeciesPage({
       <h1 className="mb-4 text-2xl font-semibold">{t.editSpecies}</h1>
       {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
       <SpeciesForm action={updateSpecies} species={species} />
-      <form action={deleteSpecies} className="mt-6">
-        <input type="hidden" name="id" value={species.id} />
-        <button className="text-sm text-red-700" type="submit">{t.deleteSpecies}</button>
-      </form>
+      <div className="mt-6">
+        <ConfirmDelete
+          action={deleteSpecies}
+          id={species.uuid}
+          next={`/officer/species/${species.uuid}`}
+          label={t.deleteSpecies}
+          title={t.confirmDeleteTitle}
+          message={`${species.id} · ${species.scientific_name}. ${t.confirmDeleteText}`}
+          confirmLabel={t.confirm}
+          cancelLabel={t.cancel}
+          className="text-sm text-red-700"
+        />
+      </div>
     </main>
   );
 }

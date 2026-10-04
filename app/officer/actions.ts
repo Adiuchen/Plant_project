@@ -92,10 +92,20 @@ export async function updateSpecies(formData: FormData) {
   redirect(`/officer/species/${id}`);
 }
 
+function speciesReturnPath(value: FormDataEntryValue | null, fallback: string) {
+  const path = String(value ?? "").trim();
+  if (path === "/officer/species" || /^\/officer\/species\/[0-9a-f-]{36}$/i.test(path)) return path;
+  return fallback;
+}
+
 export async function deleteSpecies(formData: FormData) {
   const { supabase } = await requireUser(["conservation_officer"]);
   const id = String(formData.get("id"));
   const { error } = await supabase.from("species").delete().eq("uuid", id);
-  if (error) redirect(`/officer/species/${id}?error=${encodeURIComponent(error.message)}`);
+  if (error) {
+    const destination = speciesReturnPath(formData.get("next"), `/officer/species/${id}`);
+    const joiner = destination.includes("?") ? "&" : "?";
+    redirect(`${destination}${joiner}error=${encodeURIComponent(error.message)}`);
+  }
   redirect("/officer/species");
 }
