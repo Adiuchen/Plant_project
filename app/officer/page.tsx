@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
@@ -53,6 +54,8 @@ export default async function OfficerHome({
         {filtered.map((record) => {
           const species = Array.isArray(record.species) ? record.species[0] : record.species;
           const botanist = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles;
+          const reviewHref = `/officer/records/${record.uuid}?${new URLSearchParams({ status, q }).toString()}`;
+          const canDecide = record.status === "submitted" || record.status === "needs_revision";
           return (
             <article key={record.uuid} className="surface p-4">
               <h2 className="font-medium">{record.id} · {species?.scientific_name || t.unidentified}</h2>
@@ -64,17 +67,22 @@ export default async function OfficerHome({
                 {record.latitude != null ? ` · ${record.latitude}, ${record.longitude}` : ""}
                 {record.health_status ? ` · ${t.health}: ${record.health_status}` : ""}
               </p>
-              {record.status === "submitted" || record.status === "needs_revision" ? (
+              {canDecide ? (
                 <form action={reviewRecord} className="mt-3 space-y-2">
                   <input type="hidden" name="id" value={record.uuid} />
                   <textarea className="w-full rounded border px-2 py-1" name="review_note" rows={2} placeholder={t.noteToBotanist} defaultValue={record.review_note ?? ""} />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Link className="inline-flex items-center rounded border border-forest px-3 py-1 text-sm font-semibold text-forest" href={reviewHref}>{t.reviewFull}</Link>
                     <button className="btn" name="status" value="approved">{t.approve}</button>
                     <button className="rounded border px-3 py-1" name="status" value="needs_revision">{t.requestChanges}</button>
                     <button className="rounded border border-red-300 px-3 py-1 text-red-800" name="status" value="rejected">{t.reject}</button>
                   </div>
                 </form>
-              ) : null}
+              ) : (
+                <div className="mt-3">
+                  <Link className="inline-flex items-center rounded border border-forest px-3 py-1 text-sm font-semibold text-forest" href={reviewHref}>{t.reviewFull}</Link>
+                </div>
+              )}
             </article>
           );
         })}

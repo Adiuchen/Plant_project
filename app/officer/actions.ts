@@ -4,10 +4,22 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { textOrNull } from "@/lib/format";
 
+function officerReturnPath(value: FormDataEntryValue | null) {
+  const path = String(value ?? "").trim();
+  if (path !== "/officer" && !path.startsWith("/officer?") && !path.startsWith("/officer/records/")) {
+    return "/officer";
+  }
+  if (path.includes("://") || path.includes("\\") || path.includes("\n") || path.includes("\r")) {
+    return "/officer";
+  }
+  return path;
+}
+
 export async function reviewRecord(formData: FormData) {
   const { supabase } = await requireUser(["conservation_officer"]);
   const id = String(formData.get("id"));
   const status = String(formData.get("status"));
+  const destination = officerReturnPath(formData.get("next"));
   const { error } = await supabase
     .from("plant_records")
     .update({
@@ -16,8 +28,11 @@ export async function reviewRecord(formData: FormData) {
     })
     .eq("uuid", id);
 
-  if (error) redirect(`/officer?error=${encodeURIComponent(error.message)}`);
-  redirect("/officer");
+  if (error) {
+    const joiner = destination.includes("?") ? "&" : "?";
+    redirect(`${destination}${joiner}error=${encodeURIComponent(error.message)}`);
+  }
+  redirect(destination);
 }
 
 function speciesPayload(formData: FormData) {
