@@ -14,13 +14,13 @@ export default async function HomePage({
 
   let request = supabase
     .from("public_plant_pages")
-    .select("qr_code, scientific_name, common_name, local_name, conservation_status, health_status")
-    .order("scientific_name")
+    .select("qr_code, plant_name, scientific_name, common_name, local_name, conservation_status, health_status")
+    .order("plant_name")
     .limit(50);
 
   if (query) {
     request = request.or(
-      `scientific_name.ilike.%${query}%,common_name.ilike.%${query}%,local_name.ilike.%${query}%`,
+      `plant_name.ilike.%${query}%,scientific_name.ilike.%${query}%,common_name.ilike.%${query}%,local_name.ilike.%${query}%`,
     );
   }
 
@@ -49,9 +49,9 @@ export default async function HomePage({
         {(plants ?? []).map((item) => (
           <li key={item.qr_code}>
             <Link href={`/p/${item.qr_code}`} className="surface block px-5 py-4 transition hover:-translate-y-0.5 hover:shadow-md">
-              <span className="font-medium">{item.scientific_name}</span>
+              <span className="font-medium">{item.plant_name || item.scientific_name || t.unidentifiedPlant}</span>
               <span className="mt-1 block text-sm text-neutral-600">
-                {[item.common_name, item.local_name].filter(Boolean).join(" · ") || t.noCommonName}
+                {[item.plant_name ? item.scientific_name : null, item.common_name, item.local_name].filter(Boolean).join(" · ") || t.noCommonName}
               </span>
               <span className="mt-1 block text-sm">
                 {item.conservation_status || t.statusNotSet}

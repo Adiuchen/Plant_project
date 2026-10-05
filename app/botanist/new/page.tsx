@@ -18,8 +18,8 @@ export default async function NewRecordPage({
     .order("scientific_name");
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <PageHeading backLabel={t.backPage} title={t.newFieldRecord} className="mb-4 flex flex-wrap items-center gap-3" />
+    <main className="mx-auto max-w-2xl px-4 pb-8">
+      <PageHeading backLabel={t.backPage} title={t.newFieldRecord} />
       <FieldRecordForm species={species ?? []} t={t} serverError={error} />
     </main>
   );

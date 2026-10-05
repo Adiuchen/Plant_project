@@ -20,7 +20,7 @@ export default async function LoginPage({
         <form action={login} className="mt-5 space-y-3">
           <label className="block text-sm font-medium">
             {t.loginId}
-            <input className="mt-1 w-full rounded-lg border px-3 py-2" name="login_id" required />
+            <input className="mt-1 w-full rounded-lg border px-3 py-2" name="login_id" autoComplete="username" placeholder={t.loginPlaceholder} required />
           </label>
           <label className="block text-sm font-medium">
             {t.password}

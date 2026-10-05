@@ -7,12 +7,12 @@ export default async function MapPage() {
   const { t } = await getCopy();
   const { data, error } = await supabase
     .from("plant_records")
-    .select("uuid, id, location_name, latitude, longitude, status, species(scientific_name)")
+    .select("uuid, id, plant_name, location_name, latitude, longitude, status, species(scientific_name)")
     .not("latitude", "is", null)
     .order("recorded_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading backLabel={t.backPage} title={t.map} />
       <p className="mt-1 text-sm text-neutral-600">{t.mapIntro}</p>
       {error && <p className="mt-3 text-sm text-red-700">{error.message}</p>}
@@ -22,7 +22,7 @@ export default async function MapPage() {
           const mapUrl = `https://www.openstreetmap.org/?mlat=${record.latitude}&mlon=${record.longitude}#map=15/${record.latitude}/${record.longitude}`;
           return (
             <li key={record.uuid} className="px-4 py-3 text-sm">
-              <p className="font-medium">{record.id} · {species?.scientific_name || t.unidentified}</p>
+              <p className="font-medium">{record.id} · {record.plant_name || species?.scientific_name || t.unidentified}</p>
               <p>
                 {record.location_name || t.noPlaceName} · {record.latitude}, {record.longitude} · {statusText(record.status, t)}
               </p>

@@ -28,7 +28,7 @@ export async function IotDashboard({
     ? (
         await supabase
           .from("plant_records")
-          .select("uuid, id, location_name, species(scientific_name)")
+          .select("uuid, id, plant_name, location_name, species(scientific_name)")
           .eq("status", "approved")
       ).data
     : [];
@@ -37,7 +37,7 @@ export async function IotDashboard({
   const queryError = sensorError?.message || readingError?.message || alertError?.message;
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading backLabel={t.backPage} title={t.iotDashboard} />
       <p className="mt-1 text-sm text-neutral-600">{canManage ? t.iotIntro : t.iotViewIntro}</p>
       {(error || queryError) && <p className="mt-3 text-sm text-red-700">{error || queryError}</p>}
@@ -52,7 +52,7 @@ export async function IotDashboard({
               const species = Array.isArray(plant.species) ? plant.species[0] : plant.species;
               return (
                 <option key={plant.uuid} value={plant.uuid}>
-                  {plant.id} · {species?.scientific_name || t.plant} {plant.location_name ? `· ${plant.location_name}` : ""}
+                  {plant.id} · {plant.plant_name || species?.scientific_name || t.plant} {plant.location_name ? `· ${plant.location_name}` : ""}
                 </option>
               );
             })}

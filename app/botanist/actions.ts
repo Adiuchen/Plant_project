@@ -9,11 +9,16 @@ import { PHOTO_TOO_LARGE, PHOTO_WRONG_TYPE, uploadPlantPhoto } from "@/lib/photo
 export async function createRecord(formData: FormData) {
   const { supabase, user } = await requireUser(["botanist"]);
   const status = String(formData.get("status") || "draft");
+  if (!textOrNull(formData.get("plant_name"))) {
+    redirect(`/botanist/new?error=${encodeURIComponent("Enter a plant name.")}`);
+  }
 
   const { data, error } = await supabase
     .from("plant_records")
     .insert({
       botanist_id: user.id,
+      plant_name: textOrNull(formData.get("plant_name")),
+      life_stage: textOrNull(formData.get("life_stage")),
       species_id: textOrNull(formData.get("species_id")),
       height_m: numberOrNull(formData.get("height_m")),
       trunk_diameter_cm: numberOrNull(formData.get("trunk_diameter_cm")),
@@ -36,10 +41,10 @@ export async function createRecord(formData: FormData) {
 
   const photoError = await saveRecordPhoto(supabase, user.id, data.uuid, formData);
   if (photoError) {
-    redirect(`/botanist/${data.uuid}?error=${encodeURIComponent(photoError)}`);
+    redirect(`/botanist?error=${encodeURIComponent(photoError)}`);
   }
 
-  redirect(`/botanist/${data.uuid}`);
+  redirect("/botanist");
 }
 
 export async function addRecordPhoto(formData: FormData) {
@@ -52,7 +57,7 @@ export async function addRecordPhoto(formData: FormData) {
     .eq("botanist_id", user.id)
     .maybeSingle();
 
-  if (!record || !["draft", "submitted", "needs_revision"].includes(record.status)) {
+  if (!record || !["draft", "submitted", "needs_revision", "rejected"].includes(record.status)) {
     redirect(`/botanist/${id}?error=${encodeURIComponent("A photo can be added only before the record is approved.")}`);
   }
 
@@ -111,13 +116,18 @@ export async function resubmit(formData: FormData) {
     .eq("botanist_id", user.id)
     .maybeSingle();
 
-  if (!existing || (existing.status !== "draft" && existing.status !== "needs_revision")) {
+  if (!existing || !["draft", "needs_revision", "rejected"].includes(existing.status)) {
     redirect(`/botanist/${id}?error=${encodeURIComponent("This record can no longer be edited.")}`);
+  }
+  if (!textOrNull(formData.get("plant_name"))) {
+    redirect(`/botanist/${id}?error=${encodeURIComponent("Enter a plant name.")}`);
   }
 
   const { error } = await supabase
     .from("plant_records")
     .update({
+      plant_name: textOrNull(formData.get("plant_name")),
+      life_stage: textOrNull(formData.get("life_stage")),
       species_id: textOrNull(formData.get("species_id")),
       height_m: numberOrNull(formData.get("height_m")),
       trunk_diameter_cm: numberOrNull(formData.get("trunk_diameter_cm")),
@@ -132,12 +142,12 @@ export async function resubmit(formData: FormData) {
     })
     .eq("uuid", id)
     .eq("botanist_id", user.id)
-    .in("status", ["draft", "needs_revision"]);
+    .in("status", ["draft", "needs_revision", "rejected"]);
 
   if (error) {
     redirect(`/botanist/${id}?error=${encodeURIComponent(error.message)}`);
   }
-  redirect(`/botanist/${id}`);
+  redirect("/botanist");
 }
 
 async function saveRecordPhoto(

@@ -14,8 +14,8 @@ export default async function NewSpeciesPage({
   const { t } = await getCopy();
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <PageHeading backLabel={t.backPage} title={t.addSpecies} className="mb-4 flex flex-wrap items-center gap-3" />
+    <main className="mx-auto max-w-2xl px-4 pb-8">
+      <PageHeading backLabel={t.backPage} title={t.addSpecies} />
       {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
       <SpeciesForm action={createSpecies} />
     </main>

@@ -26,7 +26,7 @@ export default async function AdminPage({
     .limit(20);
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading backLabel={t.backPage} title={t.users} />
       {(error || profileError) && (
         <p className="mt-3 text-sm text-red-700">{error || profileError?.message}</p>
@@ -50,46 +50,75 @@ export default async function AdminPage({
         <button className="btn sm:col-span-2" type="submit">{t.create}</button>
       </form>
 
-      <div className="mt-6 space-y-3">
-        {(profiles ?? []).map((profile) => (
-          <form key={profile.uuid} action={updateAccount} className="flex flex-wrap items-center gap-2 surface p-3 text-sm">
-            <input type="hidden" name="id" value={profile.uuid} />
-            <span className="min-w-24 font-medium">{profile.id}</span>
-            <span className="min-w-40">{profile.name}</span>
-            <span className="text-neutral-500">{profile.email || "—"}</span>
-            {profile.role === "botanist" || profile.role === "conservation_officer" ? (
-              <select className="rounded border px-2 py-1" name="role" defaultValue={profile.role}>
-                {roles.map((role) => (
-                  <option key={role.value} value={role.value}>{role.label}</option>
-                ))}
-              </select>
-            ) : (
-              <>
-                <input type="hidden" name="role" value={profile.role} />
-                <span>{statusText(profile.role, t)}</span>
-              </>
-            )}
-            <select className="rounded border px-2 py-1" name="status" defaultValue={profile.status}>
-              <option value="active">{t.active}</option>
-              <option value="suspended">{t.suspended}</option>
-            </select>
-            <button className="rounded border px-2 py-1" type="submit">{t.save}</button>
-          </form>
-        ))}
-      </div>
+      <section className="surface mt-6 overflow-hidden">
+        <h2 className="border-b px-4 py-3 font-medium">{t.users}</h2>
+        <div className="scroll-box h-72 overflow-auto">
+          <table className="w-full min-w-[52rem] text-sm">
+            <thead className="sticky top-0 z-10 bg-emerald-50 text-left text-forest">
+              <tr>
+                <th className="p-3 font-medium">{t.staffId}</th>
+                <th className="p-3 font-medium">{t.fullName}</th>
+                <th className="p-3 font-medium">{t.email}</th>
+                <th className="p-3 font-medium">{t.role}</th>
+                <th className="p-3 font-medium">{t.status}</th>
+                <th className="p-3 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {(profiles ?? []).map((profile) => {
+                const formId = `account-${profile.uuid}`;
+                const staff = profile.role === "botanist" || profile.role === "conservation_officer";
+                return (
+                  <tr key={profile.uuid} className="border-b last:border-0">
+                    <td className="p-3 font-medium">{profile.id}</td>
+                    <td className="p-3">{profile.name}</td>
+                    <td className="p-3 text-neutral-600">{profile.email || "—"}</td>
+                    <td className="p-3">
+                      {staff ? (
+                        <select className="rounded border px-2 py-1" name="role" form={formId} defaultValue={profile.role}>
+                          {roles.map((role) => (
+                            <option key={role.value} value={role.value}>{role.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        statusText(profile.role, t)
+                      )}
+                    </td>
+                    <td className="p-3">
+                      <select className="rounded border px-2 py-1" name="status" form={formId} defaultValue={profile.status}>
+                        <option value="active">{t.active}</option>
+                        <option value="suspended">{t.suspended}</option>
+                      </select>
+                    </td>
+                    <td className="p-3 text-right">
+                      <form id={formId} action={updateAccount}>
+                        <input type="hidden" name="id" value={profile.uuid} />
+                        {!staff && <input type="hidden" name="role" value={profile.role} />}
+                        <button className="rounded border px-3 py-1" type="submit">{t.save}</button>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      <h2 className="mt-8 text-xl font-semibold">{t.recentLogins}</h2>
-      <ul className="mt-2 divide-y surface text-sm">
-        {(logs ?? []).map((log) => {
-          const person = Array.isArray(log.profiles) ? log.profiles[0] : log.profiles;
-          return (
-            <li key={log.id} className="px-3 py-2">
-              {person?.name || person?.id || t.unknown} · {new Date(log.created_at).toLocaleString()} · {log.success ? t.success : t.failed}
-            </li>
-          );
-        })}
-        {(logs ?? []).length === 0 && <li className="px-3 py-4 text-neutral-500">{t.noLogins}</li>}
-      </ul>
+      <section className="surface mt-6 overflow-hidden">
+        <h2 className="border-b px-4 py-3 font-medium">{t.recentLogins}</h2>
+        <ul className="scroll-box h-48 divide-y overflow-auto text-sm">
+          {(logs ?? []).map((log) => {
+            const person = Array.isArray(log.profiles) ? log.profiles[0] : log.profiles;
+            return (
+              <li key={log.id} className="px-4 py-3">
+                {person?.name || person?.id || t.unknown} · {new Date(log.created_at).toLocaleString()} · {log.success ? t.success : t.failed}
+              </li>
+            );
+          })}
+          {(logs ?? []).length === 0 && <li className="px-4 py-4 text-neutral-500">{t.noLogins}</li>}
+        </ul>
+      </section>
     </main>
   );
 }

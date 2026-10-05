@@ -66,4 +66,12 @@
     background: white;
     box-shadow: 0 1px 2px rgb(20 48 32 / 0.04);
   }
+
+  .scroll-box {
+    scrollbar-width: none;
+  }
+
+  .scroll-box::-webkit-scrollbar {
+    display: none;
+  }
 }

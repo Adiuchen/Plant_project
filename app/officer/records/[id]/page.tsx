@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { PageHeading } from "@/components/PageHeading";
-import { PhotoList } from "@/components/PhotoList";
+import { PlantView } from "@/components/PlantView";
+import { RecordTopic } from "@/components/RecordTopic";
 import { StatusBadge } from "@/components/StatusBadge";
 import { requireUser } from "@/lib/auth";
 import { getCopy } from "@/lib/i18n";
@@ -21,7 +21,7 @@ export default async function OfficerRecordPage({
   const { data: record, error: queryError } = await supabase
     .from("plant_records")
     .select(
-      "uuid, id, status, location_name, latitude, longitude, recorded_at, height_m, trunk_diameter_cm, leaf_traits, flower_fruit_traits, health_status, other_traits, review_note, species(scientific_name, common_name, local_name, family, genus, conservation_status, distribution, description, ecological_info, cultural_significance), profiles!plant_records_botanist_id_fkey(name)",
+      "uuid, id, plant_name, life_stage, status, location_name, latitude, longitude, recorded_at, height_m, trunk_diameter_cm, leaf_traits, flower_fruit_traits, health_status, other_traits, review_note, species(scientific_name, common_name, local_name, family, genus, conservation_status, distribution, description, ecological_info, cultural_significance), profiles!plant_records_botanist_id_fkey(name)",
     )
     .eq("uuid", id)
     .maybeSingle();
@@ -46,61 +46,51 @@ export default async function OfficerRecordPage({
   const canDecide = record.status === "submitted" || record.status === "needs_revision";
   const listQuery = new URLSearchParams({ status, q }).toString();
   const here = `/officer/records/${record.uuid}?${listQuery}`;
-  const mapUrl =
-    record.latitude != null && record.longitude != null
-      ? `https://www.openstreetmap.org/?mlat=${record.latitude}&mlon=${record.longitude}#map=15/${record.latitude}/${record.longitude}`
-      : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
-      <article className="surface px-6 py-7">
-        <PageHeading
-          backLabel={t.backPage}
-          title={`${record.id} · ${species?.scientific_name || t.unidentifiedPlant}`}
-        />
-        <p className="mt-1 text-sm text-neutral-600">
-          {species?.common_name || t.noCommonName}
-          {species?.local_name ? ` · ${species.local_name}` : ""} · {botanist?.name || t.unknownBotanist} ·{" "}
-          <StatusBadge status={record.status} />
-        </p>
-        {(error || photoError) && <p className="mt-3 text-sm text-red-700">{error || photoError?.message}</p>}
-
-        <h2 className="mt-6 font-medium">{t.photos}</h2>
-        {photos && photos.length > 0 ? (
-          <PhotoList photos={photos} />
-        ) : (
-          <p className="mt-2 text-sm text-neutral-500">{t.noPhotos}</p>
+    <main className="mx-auto max-w-5xl px-4 pb-8">
+      <RecordTopic
+        backLabel={t.backPage}
+        title={record.plant_name || species?.scientific_name || t.unidentifiedPlant}
+        subtitle={[record.plant_name ? species?.scientific_name : null, species?.common_name, species?.local_name].filter(Boolean).join(" · ")}
+      >
+        {species?.conservation_status && (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-forest">{species.conservation_status}</span>
         )}
-
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
-          <Field label={t.recorded} value={formatWhen(record.recorded_at, locale)} />
-          <Field label={t.botanist} value={botanist?.name || t.unknownBotanist} />
-          <Field label={t.familyGenus} value={[species?.family, species?.genus].filter(Boolean).join(" · ") || null} />
-          <Field label={t.conservationStatus} value={species?.conservation_status} />
-          <Field label={t.place} value={record.location_name} />
-          <div>
-            <dt className="font-medium">{t.gps}</dt>
-            <dd className="text-neutral-700">
-              {record.latitude != null ? `${record.latitude}, ${record.longitude}` : "—"}
-              {mapUrl && (
-                <>
-                  {" · "}
-                  <a href={mapUrl} target="_blank" rel="noreferrer">
-                    {t.openMap}
-                  </a>
-                </>
-              )}
-            </dd>
-          </div>
-          <Field label={t.height} value={record.height_m} />
-          <Field label={t.trunkDiameter} value={record.trunk_diameter_cm} />
-          <Field label={t.leaves} value={record.leaf_traits} />
-          <Field label={t.flowerFruit} value={record.flower_fruit_traits} />
-          <Field label={t.health} value={record.health_status} />
-          <Field label={t.other} value={record.other_traits} />
-        </dl>
-
-        <dl className="mt-5 space-y-3 text-sm">
+        {record.health_status && (
+          <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-700">{record.health_status}</span>
+        )}
+        <StatusBadge status={record.status} />
+      </RecordTopic>
+      {(error || photoError) && <p className="mt-3 text-sm text-red-700">{error || photoError?.message}</p>}
+      <div className="mt-4">
+        <PlantView
+          locale={locale}
+          t={t}
+          showTitle={false}
+          photos={photos ?? []}
+          plant={{
+            plantName: record.plant_name,
+            lifeStage: record.life_stage,
+            scientificName: species?.scientific_name ?? null,
+            commonName: species?.common_name ?? null,
+            localName: species?.local_name ?? null,
+            family: species?.family ?? null,
+            genus: species?.genus ?? null,
+            conservationStatus: species?.conservation_status ?? null,
+            plantId: record.id,
+            location: record.location_name,
+            latitude: record.latitude,
+            longitude: record.longitude,
+            heightM: record.height_m,
+            health: record.health_status,
+            recordedAt: record.recorded_at,
+            recordedBy: botanist?.name ?? null,
+          }}
+        />
+      </div>
+      <article className="surface mt-6 px-6 py-7">
+        <dl className="space-y-3 text-sm">
           <Info label={t.distribution} value={species?.distribution} />
           <Info label={t.description} value={species?.description} />
           <Info label={t.ecology} value={species?.ecological_info} />
@@ -151,12 +141,3 @@ function Info({ label, value }: { label: string; value: string | number | null |
   return <Field label={label} value={value} />;
 }
 
-function formatWhen(value: string | null, locale: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "ms" ? "ms-MY" : "en-MY", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}

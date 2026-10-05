@@ -31,7 +31,7 @@ export async function reviewRecord(formData: FormData) {
 
   const { data: record } = await supabase
     .from("plant_records")
-    .select("status")
+    .select("status, qr_code")
     .eq("uuid", id)
     .maybeSingle();
   if (!record || (record.status !== "submitted" && record.status !== "needs_revision")) {
@@ -44,6 +44,7 @@ export async function reviewRecord(formData: FormData) {
     .update({
       status,
       review_note: textOrNull(formData.get("review_note")),
+      qr_code: status === "approved" && !record.qr_code ? `plant-${id.slice(0, 8)}` : record.qr_code,
     })
     .eq("uuid", id)
     .in("status", ["submitted", "needs_revision"]);

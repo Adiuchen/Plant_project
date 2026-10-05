@@ -11,6 +11,8 @@ export type CachedSpecies = {
 
 export type FieldDraft = {
   localId: string;
+  plantName: string;
+  lifeStage: string;
   speciesId: string | null;
   speciesLabel: string;
   heightM: string;
@@ -109,6 +111,8 @@ export function draftFromForm(formData: FormData, species: CachedSpecies[]): Fie
   const status = String(formData.get("status") || "draft") === "submitted" ? "submitted" : "draft";
   return {
     localId: crypto.randomUUID(),
+    plantName: String(formData.get("plant_name") || ""),
+    lifeStage: String(formData.get("life_stage") || ""),
     speciesId,
     speciesLabel: match ? `${match.id} · ${match.scientific_name}` : "",
     heightM: String(formData.get("height_m") || ""),
@@ -142,6 +146,8 @@ export async function syncDrafts() {
       .insert({
         botanist_id: user.id,
         local_id: draft.localId,
+        plant_name: textOrNull(draft.plantName),
+        life_stage: textOrNull(draft.lifeStage),
         species_id: draft.speciesId,
         height_m: numberOrNull(draft.heightM),
         trunk_diameter_cm: numberOrNull(draft.trunkDiameterCm),

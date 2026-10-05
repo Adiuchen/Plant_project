@@ -20,7 +20,7 @@ export default async function SpeciesListPage({
     .order("scientific_name");
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading
         backLabel={t.backPage}
         title={t.species}

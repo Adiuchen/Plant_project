@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageHeading } from "@/components/PageHeading";
-import { PhotoList } from "@/components/PhotoList";
+import { PlantView } from "@/components/PlantView";
+import { RecordTopic } from "@/components/RecordTopic";
 import { StatusBadge } from "@/components/StatusBadge";
 import QRCode from "qrcode";
 import { headers } from "next/headers";
@@ -19,10 +19,10 @@ export default async function RecordDetail({
   const { id } = await params;
   const { error } = await searchParams;
   const { supabase, user } = await requireUser(["botanist"]);
-  const { t } = await getCopy();
+  const { locale, t } = await getCopy();
   const { data: record } = await supabase
     .from("plant_records")
-    .select("*, species(scientific_name)")
+    .select("*, species(scientific_name, common_name, local_name, family, genus, conservation_status), profiles!plant_records_botanist_id_fkey(name)")
     .eq("uuid", id)
     .eq("botanist_id", user.id)
     .maybeSingle();
@@ -39,8 +39,11 @@ export default async function RecordDetail({
     .select("id, storage_path, caption")
     .eq("plant_record_id", record.uuid)
     .is("hidden_at", null);
-  const speciesName = Array.isArray(record.species) ? record.species[0]?.scientific_name : record.species?.scientific_name;
-  const editable = record.status === "draft" || record.status === "needs_revision";
+  const speciesInfo = Array.isArray(record.species) ? record.species[0] : record.species;
+  const botanist = Array.isArray(record.profiles) ? record.profiles[0] : record.profiles;
+  const speciesName = speciesInfo?.scientific_name;
+  const editable = record.status === "draft" || record.status === "needs_revision" || record.status === "rejected";
+  const sentBack = record.status === "needs_revision" || record.status === "rejected";
   const canAddPhoto = editable || record.status === "submitted";
 
   let qrImage: string | null = null;
@@ -52,30 +55,68 @@ export default async function RecordDetail({
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <PageHeading backLabel={t.backPage} title={`${record.id} · ${speciesName || t.unidentifiedPlant}`} />
-      <p className="mt-2 text-sm"><StatusBadge status={record.status} /></p>
+    <main className="mx-auto max-w-5xl px-4 pb-8">
+      <RecordTopic
+        backLabel={t.backPage}
+        title={record.plant_name || speciesName || t.unidentifiedPlant}
+        subtitle={[record.plant_name ? speciesName : null, speciesInfo?.common_name, speciesInfo?.local_name].filter(Boolean).join(" · ")}
+      >
+        {speciesInfo?.conservation_status && (
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-forest">{speciesInfo.conservation_status}</span>
+        )}
+        {record.health_status && (
+          <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs text-neutral-700">{record.health_status}</span>
+        )}
+        <StatusBadge status={record.status} />
+      </RecordTopic>
+      {sentBack && (
+        <p className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm">
+          {record.status === "rejected" ? t.noticeRejected : t.noticeRevision}
+        </p>
+      )}
       {record.review_note && <p className="mt-2 rounded bg-amber-50 px-3 py-2 text-sm">{t.officerNote}: {record.review_note}</p>}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      <div className="mt-4">
+        <PlantView
+          locale={locale}
+          t={t}
+          showTitle={false}
+          photos={photos ?? []}
+          plant={{
+            plantName: record.plant_name,
+            lifeStage: record.life_stage,
+            scientificName: speciesName ?? null,
+            commonName: speciesInfo?.common_name ?? null,
+            localName: speciesInfo?.local_name ?? null,
+            family: speciesInfo?.family ?? null,
+            genus: speciesInfo?.genus ?? null,
+            conservationStatus: speciesInfo?.conservation_status ?? null,
+            plantId: record.id,
+            location: record.location_name,
+            latitude: record.latitude,
+            longitude: record.longitude,
+            heightM: record.height_m,
+            health: record.health_status,
+            recordedAt: record.recorded_at,
+            recordedBy: botanist?.name ?? null,
+          }}
+        />
+      </div>
+      {canAddPhoto && (
+        <form action={addRecordPhoto} className="surface mt-4 space-y-2 p-4">
+          <input type="hidden" name="id" value={record.uuid} />
+          <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" capture="environment" />
+          <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo_caption" placeholder={t.photoCaption} />
+          <button className="btn" type="submit">{t.addPhoto}</button>
+        </form>
+      )}
 
-      <section className="surface mt-4 p-4">
-        <h2 className="font-medium">{t.photos}</h2>
-        {photos && photos.length > 0 ? <PhotoList photos={photos} /> : <p className="mt-2 text-sm text-neutral-500">{t.noPhotos}</p>}
-        {canAddPhoto && (
-          <form action={addRecordPhoto} className="mt-3 space-y-2">
-            <input type="hidden" name="id" value={record.uuid} />
-            <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" capture="environment" />
-            <input className="w-full rounded-lg border px-3 py-2 text-sm" name="photo_caption" placeholder={t.photoCaption} />
-            <button className="btn" type="submit">{t.addPhoto}</button>
-          </form>
-        )}
-      </section>
-
-      {editable ? (
+      {editable && (
         <form action={resubmit} className="mt-4 space-y-3">
           <input type="hidden" name="id" value={record.uuid} />
+          <Input name="plant_name" label={t.plantName} defaultValue={record.plant_name} required />
           <label className="block text-sm">
-            {t.species}
+            {t.identifiedSpecies}
             <select className="mt-1 w-full rounded border px-2 py-1" name="species_id" defaultValue={record.species_id ?? ""}>
               <option value="">{t.notIdentified}</option>
               {(species ?? []).map((item) => (
@@ -92,21 +133,21 @@ export default async function RecordDetail({
           <Input name="location_name" label={t.placeName} defaultValue={record.location_name} />
           <Input name="leaf_traits" label={t.leafTraits} defaultValue={record.leaf_traits} />
           <Input name="flower_fruit_traits" label={t.flowerFruit} defaultValue={record.flower_fruit_traits} />
+          <label className="block text-sm">
+            {t.lifeStage}
+            <select className="mt-1 w-full rounded border px-2 py-1" name="life_stage" defaultValue={record.life_stage ?? ""}>
+              <option value="">—</option>
+              <option value="seedling">{t.lifeStageSeedling}</option>
+              <option value="sapling">{t.lifeStageSapling}</option>
+              <option value="mature">{t.lifeStageMature}</option>
+              <option value="flowering">{t.lifeStageFlowering}</option>
+              <option value="fruiting">{t.lifeStageFruiting}</option>
+            </select>
+          </label>
           <Input name="health_status" label={t.health} defaultValue={record.health_status} />
           <Input name="other_traits" label={t.otherTraits} defaultValue={record.other_traits} />
           <button className="btn" type="submit">{t.submitAgain}</button>
         </form>
-      ) : (
-        <dl className="surface mt-4 grid gap-3 p-4 text-sm sm:grid-cols-2">
-          <Row label={t.place} value={record.location_name} />
-          <Row label={t.gps} value={record.latitude != null ? `${record.latitude}, ${record.longitude}` : null} />
-          <Row label={t.height} value={record.height_m} />
-          <Row label={t.trunkDiameter} value={record.trunk_diameter_cm} />
-          <Row label={t.leaves} value={record.leaf_traits} />
-          <Row label={t.flowerFruit} value={record.flower_fruit_traits} />
-          <Row label={t.health} value={record.health_status} />
-          <Row label={t.other} value={record.other_traits} />
-        </dl>
       )}
 
       {record.status === "approved" && !record.qr_code && (
@@ -128,20 +169,12 @@ export default async function RecordDetail({
   );
 }
 
-function Input({ name, label, defaultValue }: { name: string; label: string; defaultValue?: string | number | null }) {
+function Input({ name, label, defaultValue, required }: { name: string; label: string; defaultValue?: string | number | null; required?: boolean }) {
   return (
     <label className="block text-sm">
       {label}
-      <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} defaultValue={defaultValue ?? ""} />
+      <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} defaultValue={defaultValue ?? ""} required={required} />
     </label>
   );
 }
 
-function Row({ label, value }: { label: string; value: string | number | null }) {
-  return (
-    <div>
-      <dt className="font-medium">{label}</dt>
-      <dd className="text-neutral-700">{value ?? "—"}</dd>
-    </div>
-  );
-}

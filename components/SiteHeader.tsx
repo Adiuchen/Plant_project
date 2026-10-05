@@ -5,8 +5,17 @@ import { homeForRole, getSessionProfile } from "@/lib/auth";
 import { getCopy, statusText } from "@/lib/i18n";
 
 export async function SiteHeader() {
-  const { profile } = await getSessionProfile();
+  const { supabase, profile } = await getSessionProfile();
   const { locale, t } = await getCopy();
+  let changeCount = 0;
+  if (profile?.role === "botanist") {
+    const { count } = await supabase
+      .from("plant_records")
+      .select("uuid", { count: "exact", head: true })
+      .eq("botanist_id", profile.uuid)
+      .in("status", ["needs_revision", "rejected"]);
+    changeCount = count ?? 0;
+  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-emerald-950/10 bg-white/90 backdrop-blur">
@@ -21,6 +30,11 @@ export async function SiteHeader() {
               <Link href="/dashboard" className="rounded-full px-3 py-1.5 hover:bg-emerald-50">
                 {t.dashboard}
               </Link>
+              {changeCount > 0 && (
+                <Link href="/botanist#notices" className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-950">
+                  {changeCount} {t.recordsToUpdate}
+                </Link>
+              )}
               <ProfilePanel profile={profile} locale={locale} t={t} roleLabel={statusText(profile.role, t)} />
             </>
           ) : (

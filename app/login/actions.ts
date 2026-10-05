@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { homeForRole, type Profile } from "@/lib/auth";
 
 function authEmail(loginId: string) {
-  if (loginId.includes("@")) return loginId;
   return `${loginId.toLowerCase()}@staff.plantrecords.com`;
 }
 
@@ -13,9 +12,14 @@ export async function login(formData: FormData) {
   const supabase = await createClient();
   const loginId = String(formData.get("login_id") || "").trim();
   const password = String(formData.get("password") || "");
+  const usedEmail = loginId.includes("@");
+
+  if (!loginId) {
+    redirect("/login?error=" + encodeURIComponent("Enter a staff ID or a Gmail address."));
+  }
 
   const { error } = await supabase.auth.signInWithPassword({
-    email: authEmail(loginId),
+    email: usedEmail ? loginId.toLowerCase() : authEmail(loginId),
     password,
   });
   if (error) {
@@ -45,9 +49,14 @@ export async function login(formData: FormData) {
     redirect("/login?error=" + encodeURIComponent("This account is suspended."));
   }
 
-  if (profile.role === "botanist" && loginId.includes("@")) {
+  if (profile.role === "administrator" && !usedEmail) {
     await supabase.auth.signOut();
-    redirect("/login?error=" + encodeURIComponent("Botanists sign in with the ID issued by the administrator, not an email."));
+    redirect("/login?error=" + encodeURIComponent("Administrators sign in with their Gmail address."));
+  }
+
+  if (profile.role !== "administrator" && usedEmail) {
+    await supabase.auth.signOut();
+    redirect("/login?error=" + encodeURIComponent("Botanists and officers sign in with a staff ID, such as B004."));
   }
 
   await supabase.from("login_logs").insert({ user_id: user!.id, success: true });

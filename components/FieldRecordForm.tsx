@@ -162,8 +162,9 @@ export function FieldRecordForm({
         <Field name="photo_caption" label={t.photoCaption} />
       </section>
       <section className="surface space-y-3 p-4">
+        <Field name="plant_name" label={t.plantName} required />
         <label className="block text-sm">
-          {t.species}
+          {t.identifiedSpecies}
           <select className="mt-1 w-full rounded-lg border px-3 py-2" name="species_id">
             <option value="">{t.notIdentified}</option>
             {choices.map((item) => (
@@ -172,6 +173,17 @@ export function FieldRecordForm({
                 {item.common_name ? ` (${item.common_name})` : ""}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="block text-sm">
+          {t.lifeStage}
+          <select className="mt-1 w-full rounded-lg border px-3 py-2" name="life_stage" defaultValue="">
+            <option value="">—</option>
+            <option value="seedling">{t.lifeStageSeedling}</option>
+            <option value="sapling">{t.lifeStageSapling}</option>
+            <option value="mature">{t.lifeStageMature}</option>
+            <option value="flowering">{t.lifeStageFlowering}</option>
+            <option value="fruiting">{t.lifeStageFruiting}</option>
           </select>
         </label>
         <Field name="health_status" label={t.health} />
@@ -214,7 +226,7 @@ export function FieldRecordForm({
           <ul className="mt-3 space-y-2 text-sm">
             {drafts.map((draft) => (
               <li key={draft.localId}>
-                {draft.speciesLabel || t.unidentified}
+                {draft.plantName || draft.speciesLabel || t.unidentified}
                 {draft.locationName ? ` · ${draft.locationName}` : ""}
               </li>
             ))}
@@ -231,14 +243,14 @@ function photoMessage(error: string, t: Copy) {
   return error;
 }
 
-function Field({ name, label, area }: { name: string; label: string; area?: boolean }) {
+function Field({ name, label, area, required }: { name: string; label: string; area?: boolean; required?: boolean }) {
   return (
     <label className="block text-sm">
       {label}
       {area ? (
-        <textarea className="mt-1 w-full rounded-lg border px-3 py-2" name={name} rows={3} />
+        <textarea className="mt-1 w-full rounded-lg border px-3 py-2" name={name} rows={3} required={required} />
       ) : (
-        <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} />
+        <input className="mt-1 w-full rounded-lg border px-3 py-2" name={name} required={required} />
       )}
     </label>
   );

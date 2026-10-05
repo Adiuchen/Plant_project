@@ -16,7 +16,7 @@ export default async function OfficerHome({
 
   let request = supabase
     .from("plant_records")
-    .select("uuid, id, status, location_name, latitude, longitude, recorded_at, health_status, review_note, species(scientific_name, common_name), profiles!plant_records_botanist_id_fkey(name)")
+    .select("uuid, id, plant_name, status, location_name, latitude, longitude, recorded_at, health_status, review_note, species(scientific_name, common_name), profiles!plant_records_botanist_id_fkey(name)")
     .order("recorded_at", { ascending: false });
 
   if (status && status !== "all") request = request.eq("status", status);
@@ -26,12 +26,12 @@ export default async function OfficerHome({
   const filtered = (records ?? []).filter((record) => {
     if (!query) return true;
     const species = Array.isArray(record.species) ? record.species[0] : record.species;
-    const blob = `${species?.scientific_name ?? ""} ${species?.common_name ?? ""} ${record.location_name ?? ""}`.toLowerCase();
+    const blob = `${record.plant_name ?? ""} ${species?.scientific_name ?? ""} ${species?.common_name ?? ""} ${record.location_name ?? ""}`.toLowerCase();
     return blob.includes(query);
   });
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading
         backLabel={t.backPage}
         title={t.reviewRecords}
@@ -60,7 +60,7 @@ export default async function OfficerHome({
           const canDecide = record.status === "submitted" || record.status === "needs_revision";
           return (
             <article key={record.uuid} className="surface p-4">
-              <h2 className="font-medium">{record.id} · {species?.scientific_name || t.unidentified}</h2>
+              <h2 className="font-medium">{record.id} · {record.plant_name || species?.scientific_name || t.unidentified}</h2>
               <p className="text-sm text-neutral-600">
                 {species?.common_name || t.noCommonName} · {botanist?.name || t.unknownBotanist} · <StatusBadge status={record.status} />
               </p>
