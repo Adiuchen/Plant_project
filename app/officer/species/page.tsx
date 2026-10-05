@@ -22,6 +22,7 @@ export default async function SpeciesListPage({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading
+        backHref="/dashboard"
         backLabel={t.backPage}
         title={t.species}
         extra={<Link className="btn" href="/officer/species/new">{t.addSpecies}</Link>}

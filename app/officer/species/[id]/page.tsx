@@ -28,7 +28,7 @@ export default async function EditSpeciesPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={t.editSpecies} />
+      <PageHeading backHref="/officer/species" backLabel={t.backPage} title={t.editSpecies} />
       {(error || photoError) && <p className="mb-3 text-sm text-red-700">{error || photoError?.message}</p>}
       <SpeciesForm action={updateSpecies} species={species} photos={photos ?? []} />
     </main>

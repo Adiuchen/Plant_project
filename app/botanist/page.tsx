@@ -37,6 +37,7 @@ export default async function BotanistHome({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading
+        backHref="/dashboard"
         backLabel={t.backPage}
         title={t.fieldRecords}
         extra={<Link className="btn" href="/botanist/new">{t.newRecord}</Link>}

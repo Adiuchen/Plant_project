@@ -19,7 +19,7 @@ export default async function NewRecordPage({
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={t.newFieldRecord} />
+      <PageHeading backHref="/botanist" backLabel={t.backPage} title={t.newFieldRecord} />
       <FieldRecordForm species={species ?? []} t={t} serverError={error} />
     </main>
   );

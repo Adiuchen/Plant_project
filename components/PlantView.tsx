@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { PlantGallery } from "@/components/PlantGallery";
 import type { Copy, Locale } from "@/lib/i18n";
-import { PHOTO_BUCKET } from "@/lib/photos";
-import { createClient } from "@/lib/supabase/server";
 
 export type PlantDetails = {
   plantName: string | null;
@@ -36,7 +34,11 @@ export async function PlantView({
   locale: Locale;
   showTitle?: boolean;
 }) {
-  const gallery = await resolvePhotos(photos);
+  const gallery = photos.map((photo) => ({
+    id: photo.id,
+    caption: photo.caption,
+    src: `/photos/${photo.id}`,
+  }));
   const title = plant.plantName || plant.scientificName || t.unidentifiedPlant;
   const names = [plant.plantName ? plant.scientificName : null, plant.commonName, plant.localName].filter(Boolean).join(" · ");
   const recorded = [formatWhen(plant.recordedAt, locale), plant.recordedBy].filter(Boolean).join(" · ");
@@ -142,16 +144,3 @@ function formatWhen(value: string | null, locale: Locale) {
   }).format(new Date(value));
 }
 
-async function resolvePhotos(photos: { id: string; storage_path: string; caption: string | null }[]) {
-  const supabase = await createClient();
-  const resolved = await Promise.all(
-    photos.map(async (photo) => ({
-      id: photo.id,
-      caption: photo.caption,
-      src: photo.storage_path.startsWith("http://") || photo.storage_path.startsWith("https://")
-        ? photo.storage_path
-        : (await supabase.storage.from(PHOTO_BUCKET).createSignedUrl(photo.storage_path, 60 * 60)).data?.signedUrl ?? "",
-    })),
-  );
-  return resolved.filter((photo) => photo.src);
-}

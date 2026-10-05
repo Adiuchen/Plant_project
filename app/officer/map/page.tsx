@@ -13,7 +13,7 @@ export default async function MapPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={t.map} />
+      <PageHeading backHref="/dashboard" backLabel={t.backPage} title={t.map} />
       <p className="mt-1 text-sm text-neutral-600">{t.mapIntro}</p>
       {error && <p className="mt-3 text-sm text-red-700">{error.message}</p>}
       <ul className="mt-4 divide-y surface">

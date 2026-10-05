@@ -27,7 +27,7 @@ export default async function AdminPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={t.users} />
+      <PageHeading backHref="/dashboard" backLabel={t.backPage} title={t.users} />
       {(error || profileError) && (
         <p className="mt-3 text-sm text-red-700">{error || profileError?.message}</p>
       )}

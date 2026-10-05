@@ -36,6 +36,7 @@ export default async function PublicPlantPage({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <RecordTopic
+        backHref="/"
         backLabel={t.backPage}
         title={plant.plant_name || plant.scientific_name || t.unidentifiedPlant}
         subtitle={[plant.plant_name ? plant.scientific_name : null, plant.common_name, plant.local_name].filter(Boolean).join(" · ")}

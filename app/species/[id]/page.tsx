@@ -30,7 +30,7 @@ export default async function SpeciesPage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={species.scientific_name} titleClassName="text-3xl font-semibold" />
+      <PageHeading backHref="/" backLabel={t.backPage} title={species.scientific_name} titleClassName="text-3xl font-semibold" />
       <article className="surface px-6 py-7">
       <p className="text-sm font-medium text-forest">{[species.family, species.genus].filter(Boolean).join(" · ")}</p>
       <p className="mt-1 text-neutral-700">

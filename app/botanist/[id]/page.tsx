@@ -57,6 +57,7 @@ export default async function RecordDetail({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <RecordTopic
+        backHref="/botanist"
         backLabel={t.backPage}
         title={record.plant_name || speciesName || t.unidentifiedPlant}
         subtitle={[record.plant_name ? speciesName : null, speciesInfo?.common_name, speciesInfo?.local_name].filter(Boolean).join(" · ")}

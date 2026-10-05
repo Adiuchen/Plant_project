@@ -38,7 +38,7 @@ export async function IotDashboard({
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
-      <PageHeading backLabel={t.backPage} title={t.iotDashboard} />
+      <PageHeading backHref="/dashboard" backLabel={t.backPage} title={t.iotDashboard} />
       <p className="mt-1 text-sm text-neutral-600">{canManage ? t.iotIntro : t.iotViewIntro}</p>
       {(error || queryError) && <p className="mt-3 text-sm text-red-700">{error || queryError}</p>}
 

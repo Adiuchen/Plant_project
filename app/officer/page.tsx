@@ -33,6 +33,7 @@ export default async function OfficerHome({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <PageHeading
+        backHref="/dashboard"
         backLabel={t.backPage}
         title={t.reviewRecords}
         extra={<a className="text-sm underline" href="/officer/report">{t.exportCsv}</a>}

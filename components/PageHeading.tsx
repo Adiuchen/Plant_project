@@ -3,6 +3,7 @@ import { BackPage } from "@/components/BackPage";
 import { StickyBar } from "@/components/StickyBar";
 
 export function PageHeading({
+  backHref,
   backLabel,
   title,
   extra,
@@ -11,6 +12,7 @@ export function PageHeading({
   backClassName,
   sticky = true,
 }: {
+  backHref: string;
   backLabel: string;
   title: ReactNode;
   extra?: ReactNode;
@@ -22,7 +24,7 @@ export function PageHeading({
   const row = (
     <div className={className ?? "flex flex-wrap items-center justify-between gap-3"}>
       <div className="flex flex-wrap items-center gap-3">
-        <BackPage label={backLabel} className={backClassName} />
+        <BackPage href={backHref} label={backLabel} className={backClassName} />
         <h1 className={titleClassName}>{title}</h1>
       </div>
       {extra}

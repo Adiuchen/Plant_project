@@ -10,7 +10,7 @@ type PhotoClient = {
     from: (bucket: string) => {
       upload: (
         path: string,
-        body: File,
+        body: Uint8Array,
         options: { contentType: string; upsert: boolean },
       ) => Promise<{ error: { message: string } | null }>;
     };
@@ -42,11 +42,42 @@ export async function uploadPlantPhoto(supabase: PhotoClient, userId: string, fi
   const contentType = normalizedPhotoType(file);
   const extension = contentType === "image/jpeg" ? "jpg" : contentType.slice("image/".length);
   const path = `${userId}/${crypto.randomUUID()}.${extension}`;
-  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, file, {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, bytes, {
     contentType,
     upsert: false,
   });
 
   if (error) return { path: null, error: error.message };
   return { path, error: null };
+}
+
+export function storageObjectPath(storagePath: string) {
+  const trimmed = storagePath.trim();
+  const markers = [
+    `/object/public/${PHOTO_BUCKET}/`,
+    `/object/sign/${PHOTO_BUCKET}/`,
+    `/object/authenticated/${PHOTO_BUCKET}/`,
+  ];
+  let path = trimmed;
+  for (const marker of markers) {
+    const index = trimmed.indexOf(marker);
+    if (index >= 0) {
+      path = decodeURIComponent(trimmed.slice(index + marker.length).split("?")[0] ?? "");
+      break;
+    }
+  }
+  path = path.replace(/^\/+/, "");
+  if (!path || path.includes("..")) return "";
+  return path;
+}
+
+export function imageContentType(path: string, fallback?: string) {
+  const clean = path.split("?")[0]?.toLowerCase() ?? "";
+  if (clean.endsWith(".png")) return "image/png";
+  if (clean.endsWith(".webp")) return "image/webp";
+  if (clean.endsWith(".gif")) return "image/gif";
+  if (clean.endsWith(".jpg") || clean.endsWith(".jpeg")) return "image/jpeg";
+  if (fallback?.startsWith("image/")) return fallback;
+  return "image/jpeg";
 }

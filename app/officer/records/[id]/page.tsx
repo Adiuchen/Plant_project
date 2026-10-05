@@ -50,6 +50,7 @@ export default async function OfficerRecordPage({
   return (
     <main className="mx-auto max-w-5xl px-4 pb-8">
       <RecordTopic
+        backHref={`/officer?${listQuery}`}
         backLabel={t.backPage}
         title={record.plant_name || species?.scientific_name || t.unidentifiedPlant}
         subtitle={[record.plant_name ? species?.scientific_name : null, species?.common_name, species?.local_name].filter(Boolean).join(" · ")}
