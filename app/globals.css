@@ -22,6 +22,35 @@
     display: none;
   }
 
+  #profile-trigger {
+    anchor-name: --profile-trigger;
+  }
+
+  #profile-menu {
+    position: fixed;
+    inset: auto;
+    top: 4.25rem;
+    right: max(1rem, calc((100vw - 64rem) / 2 + 1rem));
+    left: auto;
+    bottom: auto;
+    width: 20rem;
+    max-height: calc(100vh - 5.5rem);
+    margin: 0;
+    overflow: auto;
+    border: 0;
+    padding: 0;
+    background: #17191f;
+    color: white;
+  }
+
+  @supports (anchor-name: --profile-trigger) {
+    #profile-menu:popover-open {
+      position-anchor: --profile-trigger;
+      top: calc(anchor(bottom) + 0.5rem);
+      right: anchor(right);
+    }
+  }
+
   input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
