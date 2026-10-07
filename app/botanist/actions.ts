@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { numberOrNull, textOrNull } from "@/lib/format";
 import { getCopy } from "@/lib/i18n";
 import { PHOTO_TOO_LARGE, PHOTO_WRONG_TYPE, uploadPlantPhoto } from "@/lib/photos";
+import { resolveSpeciesId } from "@/lib/species";
 
 export async function createRecord(formData: FormData) {
   const { supabase, user } = await requireUser(["botanist"]);
@@ -13,13 +14,18 @@ export async function createRecord(formData: FormData) {
     redirect(`/botanist/new?error=${encodeURIComponent("Enter a plant name.")}`);
   }
 
+  const species = await speciesFromForm(supabase, user.id, formData);
+  if (species.error) {
+    redirect(`/botanist/new?error=${encodeURIComponent(species.error)}`);
+  }
+
   const { data, error } = await supabase
     .from("plant_records")
     .insert({
       botanist_id: user.id,
       plant_name: textOrNull(formData.get("plant_name")),
       life_stage: textOrNull(formData.get("life_stage")),
-      species_id: textOrNull(formData.get("species_id")),
+      species_id: species.id,
       height_m: numberOrNull(formData.get("height_m")),
       trunk_diameter_cm: numberOrNull(formData.get("trunk_diameter_cm")),
       leaf_traits: textOrNull(formData.get("leaf_traits")),
@@ -123,12 +129,17 @@ export async function resubmit(formData: FormData) {
     redirect(`/botanist/${id}?error=${encodeURIComponent("Enter a plant name.")}`);
   }
 
+  const species = await speciesFromForm(supabase, user.id, formData);
+  if (species.error) {
+    redirect(`/botanist/${id}?error=${encodeURIComponent(species.error)}`);
+  }
+
   const { error } = await supabase
     .from("plant_records")
     .update({
       plant_name: textOrNull(formData.get("plant_name")),
       life_stage: textOrNull(formData.get("life_stage")),
-      species_id: textOrNull(formData.get("species_id")),
+      species_id: species.id,
       height_m: numberOrNull(formData.get("height_m")),
       trunk_diameter_cm: numberOrNull(formData.get("trunk_diameter_cm")),
       leaf_traits: textOrNull(formData.get("leaf_traits")),
@@ -178,6 +189,36 @@ async function saveRecordPhoto(
     uploaded_by: userId,
   });
   return error?.message ?? null;
+}
+
+export async function ensureSpecies(name: string) {
+  const { supabase, user } = await requireUser(["botanist"]);
+  const resolved = await resolveSpeciesId(supabase, user.id, "new", name);
+  if (!resolved.error) return { id: resolved.id, error: null as string | null };
+  if (resolved.error === "name") {
+    const { t } = await getCopy();
+    return { id: null, error: t.newSpeciesRequired };
+  }
+  return { id: null, error: resolved.error };
+}
+
+async function speciesFromForm(
+  supabase: Parameters<typeof resolveSpeciesId>[0],
+  userId: string,
+  formData: FormData,
+) {
+  const resolved = await resolveSpeciesId(
+    supabase,
+    userId,
+    textOrNull(formData.get("species_id")),
+    textOrNull(formData.get("new_species_name")),
+  );
+  if (!resolved.error) return resolved;
+  if (resolved.error === "name") {
+    const { t } = await getCopy();
+    return { id: null, error: t.newSpeciesRequired };
+  }
+  return resolved;
 }
 
 async function translatePhotoError(message: string | null) {

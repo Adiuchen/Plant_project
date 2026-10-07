@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createRecord } from "@/app/botanist/actions";
+import { SpeciesSelect } from "@/components/SpeciesSelect";
 import {
   cacheSpecies,
   draftFromForm,
@@ -32,6 +33,7 @@ export function FieldRecordForm({
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState("");
+  const [speciesFormKey, setSpeciesFormKey] = useState(0);
 
   async function refreshDrafts() {
     setDrafts(await listDrafts());
@@ -113,6 +115,7 @@ export function FieldRecordForm({
         }
         await saveDraft(draft);
         event.currentTarget.reset();
+        setSpeciesFormKey((key) => key + 1);
         if (preview) URL.revokeObjectURL(preview);
         setPreview("");
         setMessage(t.savedOnPhone);
@@ -163,18 +166,7 @@ export function FieldRecordForm({
       </section>
       <section className="surface space-y-3 p-4">
         <Field name="plant_name" label={t.plantName} required />
-        <label className="block text-sm">
-          {t.identifiedSpecies}
-          <select className="mt-1 w-full rounded-lg border px-3 py-2" name="species_id">
-            <option value="">{t.notIdentified}</option>
-            {choices.map((item) => (
-              <option key={item.uuid} value={item.uuid}>
-                {item.id} · {item.scientific_name}
-                {item.common_name ? ` (${item.common_name})` : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SpeciesSelect key={speciesFormKey} t={t} species={choices} />
         <label className="block text-sm">
           {t.lifeStage}
           <select className="mt-1 w-full rounded-lg border px-3 py-2" name="life_stage" defaultValue="">

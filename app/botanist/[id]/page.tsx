@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlantView } from "@/components/PlantView";
 import { RecordTopic } from "@/components/RecordTopic";
+import { SpeciesSelect } from "@/components/SpeciesSelect";
 import { StatusBadge } from "@/components/StatusBadge";
 import QRCode from "qrcode";
 import { headers } from "next/headers";
@@ -116,15 +117,7 @@ export default async function RecordDetail({
         <form action={resubmit} className="mt-4 space-y-3">
           <input type="hidden" name="id" value={record.uuid} />
           <Input name="plant_name" label={t.plantName} defaultValue={record.plant_name} required />
-          <label className="block text-sm">
-            {t.identifiedSpecies}
-            <select className="mt-1 w-full rounded border px-2 py-1" name="species_id" defaultValue={record.species_id ?? ""}>
-              <option value="">{t.notIdentified}</option>
-              {(species ?? []).map((item) => (
-                <option key={item.uuid} value={item.uuid}>{item.id} · {item.scientific_name}</option>
-              ))}
-            </select>
-          </label>
+          <SpeciesSelect t={t} species={species ?? []} defaultValue={record.species_id ?? ""} compact />
           <div className="grid grid-cols-2 gap-3">
             <Input name="height_m" label={t.height} defaultValue={record.height_m} />
             <Input name="trunk_diameter_cm" label={t.trunk} defaultValue={record.trunk_diameter_cm} />

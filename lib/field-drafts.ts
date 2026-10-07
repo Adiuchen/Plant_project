@@ -1,4 +1,5 @@
 import { createBrowserSupabase } from "@/lib/supabase/browser";
+import { ensureSpecies } from "@/app/botanist/actions";
 import { numberOrNull, textOrNull } from "@/lib/format";
 import { photoProblemMessage, uploadPlantPhoto } from "@/lib/photos";
 
@@ -15,6 +16,7 @@ export type FieldDraft = {
   lifeStage: string;
   speciesId: string | null;
   speciesLabel: string;
+  newSpeciesName?: string;
   heightM: string;
   trunkDiameterCm: string;
   latitude: string;
@@ -107,6 +109,7 @@ export async function deleteDraft(localId: string) {
 
 export function draftFromForm(formData: FormData, species: CachedSpecies[]): FieldDraft {
   const speciesId = textOrNull(formData.get("species_id"));
+  const newSpeciesName = String(formData.get("new_species_name") || "").trim();
   const match = species.find((item) => item.uuid === speciesId);
   const status = String(formData.get("status") || "draft") === "submitted" ? "submitted" : "draft";
   return {
@@ -114,7 +117,8 @@ export function draftFromForm(formData: FormData, species: CachedSpecies[]): Fie
     plantName: String(formData.get("plant_name") || ""),
     lifeStage: String(formData.get("life_stage") || ""),
     speciesId,
-    speciesLabel: match ? `${match.id} · ${match.scientific_name}` : "",
+    speciesLabel: speciesId === "new" ? newSpeciesName : match ? `${match.id} · ${match.scientific_name}` : "",
+    newSpeciesName: speciesId === "new" ? newSpeciesName : "",
     heightM: String(formData.get("height_m") || ""),
     trunkDiameterCm: String(formData.get("trunk_diameter_cm") || ""),
     latitude: String(formData.get("latitude") || ""),
@@ -141,6 +145,13 @@ export async function syncDrafts() {
   const drafts = await listDrafts();
   let uploaded = 0;
   for (const draft of drafts) {
+    let speciesId = draft.speciesId;
+    if (speciesId === "new") {
+      const created = await ensureSpecies(draft.newSpeciesName || "");
+      if (created.error || !created.id) return { uploaded, error: created.error ?? "Enter the new species name." };
+      speciesId = created.id;
+    }
+
     const { data, error } = await supabase
       .from("plant_records")
       .insert({
@@ -148,7 +159,7 @@ export async function syncDrafts() {
         local_id: draft.localId,
         plant_name: textOrNull(draft.plantName),
         life_stage: textOrNull(draft.lifeStage),
-        species_id: draft.speciesId,
+        species_id: speciesId,
         height_m: numberOrNull(draft.heightM),
         trunk_diameter_cm: numberOrNull(draft.trunkDiameterCm),
         leaf_traits: textOrNull(draft.leafTraits),
