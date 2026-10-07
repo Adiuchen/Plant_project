@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CompleteResetLink } from "@/components/CompleteResetLink";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getCopy } from "@/lib/i18n";
 import "./globals.css";
@@ -17,6 +18,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang={locale} className="h-full antialiased">
       <body className="min-h-full text-ink">
         <SiteHeader />
+        <CompleteResetLink />
         {children}
       </body>
     </html>

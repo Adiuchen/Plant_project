@@ -4,6 +4,7 @@ import { createClient as createAuthClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { numberOrNull, textOrNull } from "@/lib/format";
+import { getCopy } from "@/lib/i18n";
 
 function authEmail(loginId: string) {
   if (loginId.includes("@")) return loginId;
@@ -24,7 +25,13 @@ export async function createAccount(formData: FormData) {
   const { supabase } = await requireUser(["administrator"]);
   const password = String(formData.get("password") || "");
   const fullName = String(formData.get("full_name") || "").trim();
+  const email = String(formData.get("email") || "").trim().toLowerCase();
   const role = String(formData.get("role") || "botanist");
+  const { t } = await getCopy();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    redirect("/admin?error=" + encodeURIComponent(t.invalidEmail));
+  }
 
   if (role !== "botanist" && role !== "conservation_officer") {
     redirect("/admin?error=" + encodeURIComponent("Choose Botanist or Officer."));
@@ -54,7 +61,7 @@ export async function createAccount(formData: FormData) {
     uuid: data.user.id,
     id: loginId,
     name: fullName,
-    email: null,
+    email,
     role,
     status: "active",
   });

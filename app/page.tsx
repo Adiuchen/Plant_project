@@ -5,10 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; code?: string }>;
 }) {
-  const { q } = await searchParams;
+  const params = await searchParams;
   const { t } = await getCopy();
+  if (params.code) {
+    return (
+      <main className="mx-auto max-w-md px-4 py-16">
+        <p className="text-sm text-neutral-600">{t.openingLink}</p>
+      </main>
+    );
+  }
+  const q = params.q;
   const query = (q ?? "").trim();
   const supabase = await createClient();
 

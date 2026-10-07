@@ -35,7 +35,8 @@ export function ProfilePanel({
 }) {
   const [state, formAction, pending] = useActionState(saveEmail, null as SaveEmailState);
   const email = state?.email ?? profile.email;
-  const initial = profile.name.slice(0, 1).toUpperCase();
+  const name = state?.name ?? profile.name;
+  const initial = (name || "?").slice(0, 1).toUpperCase();
 
   return (
     <>
@@ -78,8 +79,20 @@ export function ProfilePanel({
         </div>
         <form action={formAction} className="space-y-2 border-t border-white/10 px-3 py-3">
           {!email && <p className="text-xs text-amber-200">{t.emailReminder}</p>}
-          {state?.saved && <p className="text-xs text-emerald-300">{t.emailSaved}</p>}
+          {state?.saved && <p className="text-xs text-emerald-300">{t.profileSaved}</p>}
           {state?.error && <p className="text-xs text-red-300">{state.error}</p>}
+          <label className="block text-xs text-white/60">
+            {t.fullName}
+            <input
+              className="mt-1 w-full rounded-lg border border-white/15 bg-white px-2 py-1.5 text-sm text-ink"
+              name="name"
+              type="text"
+              defaultValue={name}
+              key={name}
+              maxLength={80}
+              required
+            />
+          </label>
           <label className="block text-xs text-white/60">
             {t.personalEmail}
             <input
@@ -114,7 +127,7 @@ export function ProfilePanel({
             {initial}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{profile.name}</p>
+            <p className="truncate text-sm font-medium">{name}</p>
             <p className="truncate text-xs text-white/60">{profile.id} · {roleLabel}</p>
           </div>
           <form action={logout}>
